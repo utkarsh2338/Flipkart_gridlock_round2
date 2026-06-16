@@ -35,13 +35,26 @@ export default function ImageAnalyzer({
   onImageUpload,
   highlightedBoxId,
   liveDemoMode,
+  modelReady,
 }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [showScanLine, setShowScanLine] = useState(false);
   const [animatedBoxes, setAnimatedBoxes] = useState([]);
   const [imageReady, setImageReady] = useState(false);
+  const [pulseHighlight, setPulseHighlight] = useState(false);
+
+  // Scroll canvas into view and pulse when View Evidence is clicked
+  useEffect(() => {
+    if (highlightedBoxId && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setPulseHighlight(true);
+      const timer = setTimeout(() => setPulseHighlight(false), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedBoxId]);
 
   // Handle file drop/select
   const handleFile = useCallback((file) => {
@@ -129,12 +142,29 @@ export default function ImageAnalyzer({
         const h = box.h * scaleY;
 
         const isHighlighted = highlightedBoxId === box.id;
-        const lineWidth = isHighlighted ? 3 : 2;
+        const lineWidth = isHighlighted ? 4 : 2;
         const alpha = isHighlighted ? 1 : 0.85;
 
         if (isHighlighted) {
+          // Draw a strong pulsing highlight background
+          ctx.save();
           ctx.shadowColor = box.color;
-          ctx.shadowBlur = 20;
+          ctx.shadowBlur = 40;
+          ctx.fillStyle = box.color;
+          ctx.globalAlpha = 0.18;
+          ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+          ctx.globalAlpha = 1;
+
+          // Outer glowing border
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([8, 4]);
+          ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
+          ctx.setLineDash([]);
+          ctx.restore();
+
+          ctx.shadowColor = box.color;
+          ctx.shadowBlur = 30;
         }
 
         // Semi-transparent fill
@@ -275,7 +305,7 @@ export default function ImageAnalyzer({
           </div>
         </div>
       ) : (
-        <div className={`canvas-container relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'}`}>
+        <div ref={containerRef} className={`canvas-container relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''}`}>
           <canvas ref={canvasRef} className="w-full" />
 
           {/* Scan Line */}
@@ -293,11 +323,22 @@ export default function ImageAnalyzer({
               <div className="relative z-10 flex flex-col items-center">
                 <Loader2 className="w-10 h-10 text-cyan-accent animate-spin mb-3" />
                 <p className="text-sm font-semibold text-white/90 mb-1">Analyzing Image...</p>
-                <p className="text-[11px] text-navy-300 font-mono">Running YOLOv8x pipeline</p>
+                <p className="text-[11px] text-navy-300 font-mono">Running COCO-SSD Detection</p>
                 <div className="w-48 h-1.5 bg-white/[0.06] rounded-full mt-3 overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-cyan-accent to-purple-500 rounded-full animate-processing" />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Powered by TensorFlow.js badge */}
+          {!isProcessing && boundingBoxes.length > 0 && (
+            <div className="tfjs-badge">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z" fill="#FF6F00" opacity="0.9"/>
+                <path d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12V2z" fill="#FFA726" opacity="0.7"/>
+              </svg>
+              <span>Powered by TensorFlow.js</span>
             </div>
           )}
         </div>

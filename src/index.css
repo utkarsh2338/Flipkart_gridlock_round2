@@ -492,6 +492,23 @@ body {
   height: auto;
 }
 
+/* Highlight pulse when View Evidence is clicked */
+.canvas-highlight-pulse {
+  animation: canvas-pulse 0.8s ease-in-out 3;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4), 0 0 60px rgba(0, 212, 255, 0.15);
+}
+
+@keyframes canvas-pulse {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    border-color: rgba(0, 212, 255, 0.6);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.4), 0 0 60px rgba(0, 212, 255, 0.15);
+  }
+}
+
 .scan-line {
   position: absolute;
   left: 0;
@@ -921,3 +938,251 @@ body {
 .stagger-6 { animation-delay: 0.48s; }
 .stagger-7 { animation-delay: 0.56s; }
 .stagger-8 { animation-delay: 0.64s; }
+
+/* ===== MODEL LOADING OVERLAY ===== */
+.model-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: #020817;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+  overflow: hidden;
+}
+
+.model-loading-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.model-loading-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+}
+
+.model-loading-glow-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 111, 0, 0.15), transparent 70%);
+  top: 30%;
+  left: 25%;
+  animation: model-glow-drift 6s ease-in-out infinite alternate;
+}
+
+.model-loading-glow-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.12), transparent 70%);
+  bottom: 20%;
+  right: 25%;
+  animation: model-glow-drift 6s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes model-glow-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(30px, -20px) scale(1.15); }
+}
+
+.model-loading-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.model-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 1;
+  animation: fade-in-scale 0.6s ease-out forwards;
+}
+
+.model-loading-logo {
+  margin-bottom: 8px;
+}
+
+.model-loading-icon-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 111, 0, 0.08);
+  border: 2px solid rgba(255, 111, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: model-icon-ring-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 40px rgba(255, 111, 0, 0.15), inset 0 0 20px rgba(255, 111, 0, 0.05);
+}
+
+@keyframes model-icon-ring-pulse {
+  0%, 100% { transform: scale(1); border-color: rgba(255, 111, 0, 0.25); }
+  50% { transform: scale(1.06); border-color: rgba(255, 111, 0, 0.5); }
+}
+
+.model-loading-icon {
+  width: 32px;
+  height: 32px;
+  color: #FF6F00;
+  animation: model-icon-spin 3s linear infinite;
+}
+
+@keyframes model-icon-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.model-loading-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.model-loading-subtitle {
+  font-size: 0.8rem;
+  color: #4a6085;
+  margin-top: -8px;
+  letter-spacing: 0.05em;
+}
+
+.model-loading-progress-container {
+  width: 320px;
+  margin-top: 8px;
+}
+
+.model-loading-progress-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: visible;
+  position: relative;
+}
+
+.model-loading-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #FF6F00, #FFA726, #FF6F00);
+  background-size: 200% 100%;
+  animation: model-progress-shimmer 2s linear infinite;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+.model-loading-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  border-radius: 0 3px 3px 0;
+}
+
+@keyframes model-progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.model-loading-progress-glow {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 111, 0, 0.6);
+  filter: blur(6px);
+  pointer-events: none;
+  transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.model-loading-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.model-loading-progress-text {
+  font-size: 0.75rem;
+  color: #8a9bb5;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.model-loading-progress-percent {
+  font-size: 0.85rem;
+  color: #FFA726;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.model-loading-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 111, 0, 0.08);
+  border: 1px solid rgba(255, 111, 0, 0.2);
+  font-size: 0.7rem;
+  color: #FFA726;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  margin-top: 8px;
+}
+
+.model-loading-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.model-loading-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 111, 0, 0.5);
+  animation: model-dot-bounce 1s ease-in-out infinite;
+}
+
+@keyframes model-dot-bounce {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-6px); }
+}
+
+/* ===== TENSORFLOW.JS BADGE ON CANVAS ===== */
+.tfjs-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(2, 8, 23, 0.75);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 111, 0, 0.2);
+  font-size: 0.6rem;
+  color: #FFA726;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  animation: fade-in-scale 0.5s ease forwards;
+  animation-delay: 0.5s;
+  opacity: 0;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+

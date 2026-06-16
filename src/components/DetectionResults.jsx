@@ -158,7 +158,7 @@ function ViolationCard({ violation, index, onHighlight, isNew }) {
           <div className="bg-white/[0.03] rounded-xl p-2.5 text-[11px] font-mono text-navy-200 space-y-1 border border-white/[0.04]">
             <p><span className="text-navy-400">Camera:</span> {violation.cameraId}</p>
             <p><span className="text-navy-400">Frame:</span> #{Math.floor(Math.random() * 9000 + 1000)}</p>
-            <p><span className="text-navy-400">Model:</span> YOLOv8x-traffic-v2.1</p>
+            <p><span className="text-navy-400">Model:</span> COCO-SSD (TensorFlow.js)</p>
             <p><span className="text-navy-400">Inference:</span> {(Math.random() * 20 + 30).toFixed(1)}ms</p>
             <p><span className="text-navy-400">IoU:</span> 0.45</p>
           </div>

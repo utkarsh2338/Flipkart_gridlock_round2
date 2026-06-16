@@ -5,9 +5,10 @@ import ImageAnalyzer from './components/ImageAnalyzer';
 import DetectionResults from './components/DetectionResults';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import LiveTicker from './components/LiveTicker';
+import ModelLoadingOverlay from './components/ModelLoadingOverlay';
+import useTFModel from './hooks/useTFModel';
+import { runFullPipeline } from './data/aiDetection';
 import {
-  generateBoundingBoxes,
-  generateViolationResults,
   generateLiveEvent,
   generateSummaryStats,
   PREPROCESSING_STEPS,
@@ -165,6 +166,9 @@ export default function App() {
   const imgDimRef = useRef({ w: 800, h: 500 });
   const soundRef = useRef(false);
 
+  // TensorFlow.js model
+  const { model, isLoading: modelLoading, loadProgress, error: modelError } = useTFModel();
+
   // Keep ref in sync
   useEffect(() => { soundRef.current = soundEnabled; }, [soundEnabled]);
 
@@ -189,7 +193,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Process image (simulated)
+  // Process image with REAL AI detection
   const processImage = useCallback((imageSrc, dimensions) => {
     setUploadedImage(imageSrc);
     imgDimRef.current = dimensions || { w: 800, h: 500 };
@@ -200,6 +204,7 @@ export default function App() {
     setViolations([]);
     setHighlightedBoxId(null);
 
+    // Animate preprocessing steps (visual only)
     PREPROCESSING_STEPS.forEach((step, idx) => {
       setTimeout(() => {
         setProcessingStep(idx);
@@ -207,20 +212,53 @@ export default function App() {
       }, step.delay);
     });
 
-    setTimeout(() => {
-      const boxes = generateBoundingBoxes(imgDimRef.current.w, imgDimRef.current.h);
-      const viols = generateViolationResults(boxes);
-      setBoundingBoxes(boxes);
-      setViolations(viols);
-      setAllViolations(prev => [...prev, ...viols]);
-      setIsProcessing(false);
+    // Run real AI detection
+    const imgEl = new Image();
+    imgEl.crossOrigin = 'anonymous';
+    imgEl.onload = async () => {
+      try {
+        if (model) {
+          const { boxes, violations: viols } = await runFullPipeline(
+            model,
+            imgEl,
+            imgEl.naturalWidth,
+            imgEl.naturalHeight
+          );
 
-      // Sound alert for high-severity violations
-      if (soundRef.current && viols.some(v => v.severity === 'high')) {
-        playAlertBeep();
+          // Wait for preprocessing animation to finish
+          const maxDelay = Math.max(...PREPROCESSING_STEPS.map(s => s.delay));
+          const elapsed = performance.now();
+          const waitTime = Math.max(0, maxDelay + 500 - elapsed);
+
+          setTimeout(() => {
+            setBoundingBoxes(boxes);
+            setViolations(viols);
+            setAllViolations(prev => [...prev, ...viols]);
+            setIsProcessing(false);
+
+            if (soundRef.current && viols.some(v => v.severity === 'high')) {
+              playAlertBeep();
+            }
+          }, waitTime > 2000 ? 500 : waitTime);
+        } else {
+          // Model not loaded yet — show empty results after animation
+          setTimeout(() => {
+            setBoundingBoxes([]);
+            setViolations([]);
+            setIsProcessing(false);
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('Detection failed:', err);
+        setTimeout(() => {
+          setBoundingBoxes([]);
+          setViolations([]);
+          setIsProcessing(false);
+        }, 2000);
       }
-    }, 2000);
-  }, []);
+    };
+    imgEl.src = imageSrc;
+  }, [model]);
 
   // Live demo mode
   useEffect(() => {
@@ -231,7 +269,7 @@ export default function App() {
       liveDemoRef.current = setInterval(() => {
         const sampleImg = generateSampleImage();
         processImage(sampleImg, { w: 800, h: 500 });
-      }, 5000);
+      }, 6000);
     } else {
       if (liveDemoRef.current) {
         clearInterval(liveDemoRef.current);
@@ -269,9 +307,13 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [violations, allViolations]);
 
+  // Show model loading overlay after splash dismisses
+  const showModelLoading = !showSplash && modelLoading;
+
   return (
     <>
       <SplashScreen visible={showSplash} />
+      <ModelLoadingOverlay progress={loadProgress} visible={showModelLoading} />
 
       <div className="app-background flex flex-col min-h-screen relative">
         {/* ===== Header ===== */}
@@ -363,6 +405,7 @@ export default function App() {
               onImageUpload={processImage}
               highlightedBoxId={highlightedBoxId}
               liveDemoMode={liveDemoMode}
+              modelReady={!!model}
             />
           </section>
 
