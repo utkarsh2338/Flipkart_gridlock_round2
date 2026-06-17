@@ -237,3 +237,54 @@ export function generateSummaryStats() {
     revenueToday: '₹4,33,800',
   };
 }
+
+// Generate a larger historical archive set (25 entries)
+export function generateHistoricalArchive() {
+  const archive = [];
+  const now = new Date();
+  
+  const statuses = ['Pending', 'Challan Sent', 'Paid', 'Dismissed'];
+  for (let i = 0; i < 25; i++) {
+    const violation = VIOLATION_TYPES[randomFrom(VIOLATION_KEYS)];
+    const vehicleType = randomFrom(VEHICLE_TYPES);
+    const licensePlate = randomFrom(KARNATAKA_PLATES);
+    const cameraId = randomFrom(CAMERA_IDS);
+    
+    // Generate timestamp spanning back 7 days
+    const daysAgo = randomBetween(0.05, 7);
+    const timestamp = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+    
+    // Status distribution
+    let status = 'Pending';
+    const rand = Math.random();
+    if (rand > 0.7) status = 'Paid';
+    else if (rand > 0.3) status = 'Challan Sent';
+    else if (rand > 0.95) status = 'Dismissed';
+
+    archive.push({
+      id: `viol-hist-${10000 + i}-${Math.floor(Math.random() * 1000)}`,
+      type: violation,
+      confidence: randomBetween(75, 99.5),
+      vehicleType,
+      licensePlate,
+      timestamp,
+      cameraId,
+      severity: violation.severity,
+      status,
+      // Simulated frame telemetry
+      telemetry: {
+        speed: Math.floor(randomBetween(35, 95)),
+        speedLimit: 60,
+        lane: Math.floor(randomBetween(1, 4)),
+        bbox: {
+          x: Math.floor(randomBetween(10, 50)),
+          y: Math.floor(randomBetween(25, 55)),
+          w: Math.floor(randomBetween(20, 35)),
+          h: Math.floor(randomBetween(30, 45)),
+        }
+      }
+    });
+  }
+  
+  return archive.sort((a, b) => b.timestamp - a.timestamp);
+}

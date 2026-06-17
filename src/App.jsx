@@ -1,9 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Shield, Zap, Eye, Radio, Volume2, VolumeX } from 'lucide-react';
+import {
+  Shield, Zap, Eye, Radio, Volume2, VolumeX,
+  Bell, Settings, LayoutDashboard, BarChart3,
+  Video, Archive,
+} from 'lucide-react';
 import StatsBar from './components/StatsBar';
 import ImageAnalyzer from './components/ImageAnalyzer';
 import DetectionResults from './components/DetectionResults';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import ArchivePanel from './components/ArchivePanel';
 import LiveTicker from './components/LiveTicker';
 import ModelLoadingOverlay from './components/ModelLoadingOverlay';
 import ViolationMap from './components/ViolationMap';
@@ -13,6 +18,7 @@ import {
   generateLiveEvent,
   generateSummaryStats,
   PREPROCESSING_STEPS,
+  generateHistoricalArchive,
 } from './data/mockData';
 
 // ===== Sample Image Generator =====
@@ -149,8 +155,17 @@ function SplashScreen({ visible }) {
   );
 }
 
+// ===== Navigation Tabs =====
+const NAV_TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'live-feed', label: 'Live Feed', icon: Video },
+  { id: 'archive', label: 'Archive', icon: Archive },
+];
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [uploadedImage, setUploadedImage] = useState(null);
   const [boundingBoxes, setBoundingBoxes] = useState([]);
   const [violations, setViolations] = useState([]);
@@ -162,6 +177,29 @@ export default function App() {
   const [highlightedBoxId, setHighlightedBoxId] = useState(null);
   const [allViolations, setAllViolations] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(false);
+
+  const [archiveViolations, setArchiveViolations] = useState(() => {
+    const cached = localStorage.getItem('vg_archive_violations');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        return parsed.map(v => ({
+          ...v,
+          timestamp: new Date(v.timestamp)
+        }));
+      } catch (err) {
+        console.error('Error parsing cached archive:', err);
+      }
+    }
+    const generated = generateHistoricalArchive();
+    localStorage.setItem('vg_archive_violations', JSON.stringify(generated));
+    return generated;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vg_archive_violations', JSON.stringify(archiveViolations));
+  }, [archiveViolations]);
+
   const stats = generateSummaryStats();
   const liveDemoRef = useRef(null);
   const imgDimRef = useRef({ w: 800, h: 500 });
@@ -236,6 +274,26 @@ export default function App() {
             setBoundingBoxes(boxes);
             setViolations(viols);
             setAllViolations(prev => [...prev, ...viols]);
+
+            // Add newly detected violations to archive state
+            if (viols && viols.length > 0) {
+              const newArchiveEntries = viols.map(v => ({
+                ...v,
+                status: 'Pending',
+                telemetry: {
+                  speed: Math.floor(40 + Math.random() * 40),
+                  speedLimit: 60,
+                  lane: Math.floor(1 + Math.random() * 3),
+                  bbox: { x: 20, y: 35, w: 25, h: 35 } // simulated overlay for historical frame
+                }
+              }));
+              setArchiveViolations(prev => {
+                // Ensure no duplicate IDs
+                const filteredPrev = prev.filter(p => !newArchiveEntries.some(n => n.id === p.id));
+                return [...newArchiveEntries, ...filteredPrev];
+              });
+            }
+
             setIsProcessing(false);
 
             if (soundRef.current && viols.some(v => v.severity === 'high')) {
@@ -317,132 +375,191 @@ export default function App() {
       <SplashScreen visible={showSplash} />
       <ModelLoadingOverlay progress={loadProgress} visible={showModelLoading} />
 
-      <div className="app-background flex flex-col min-h-screen relative">
-        {/* ===== Header ===== */}
-        <header className="relative flex items-center justify-between px-6 py-3 bg-navy-900/60 backdrop-blur-xl sticky top-0 z-50 border-b border-white/[0.04]" style={{ position: 'relative', zIndex: 50 }}>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Shield className="w-8 h-8 text-cyan-accent animate-icon-pulse" />
-              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-success-green rounded-full animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-lg font-extrabold tracking-tight">
-                <span className="gradient-text">VisionGuard</span>
-                <span className="gradient-text-ai ml-1.5">AI</span>
-              </h1>
-              <p className="text-[10px] text-navy-300 tracking-[0.2em] uppercase -mt-0.5">
-                Automated Traffic Violation Detection
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-5">
-            {/* Sound Toggle */}
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-              aria-label="Toggle sound"
-              id="sound-toggle"
-            >
-              {soundEnabled
-                ? <Volume2 className="w-4 h-4 text-cyan-accent" />
-                : <VolumeX className="w-4 h-4 text-navy-400" />
-              }
-            </button>
-
-            {/* Live Demo Toggle */}
-            <div className="flex items-center gap-2.5">
-              {liveDemoMode && (
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-green opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success-green" />
-                  </span>
-                  <span className="text-[10px] font-bold text-success-green uppercase tracking-widest animate-pulse">LIVE</span>
-                </div>
-              )}
-              <span className="text-xs text-navy-300 font-medium">Live Demo</span>
-              <button
-                onClick={() => setLiveDemoMode(!liveDemoMode)}
-                className={`toggle-switch ${liveDemoMode ? 'active' : ''}`}
-                aria-label="Toggle live demo mode"
-                id="live-demo-toggle"
-              />
+      <div className="app-frame">
+        <div className="app-background flex flex-col min-h-screen relative">
+          {/* ===== Header ===== */}
+          <header className="app-header" style={{ position: 'relative', zIndex: 50 }}>
+            {/* Brand */}
+            <div className="header-brand">
+              <span className="brand-name gradient-text">VISIONGUARD</span>
+              <span className="brand-name gradient-text-ai">AI</span>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-navy-300">
-              <div className="relative">
-                <Eye className="w-3.5 h-3.5" />
-                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-success-green rounded-full animate-pulse" />
+            {/* Navigation Tabs */}
+            <nav className="nav-tabs">
+              {NAV_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  id={`nav-tab-${tab.id}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+
+            {/* Right Section: Status + Controls */}
+            <div className="header-status">
+              {/* Camera Count */}
+              <div className="header-chip">
+                <span className="dot" />
+                <span className="value">{stats.camerasActive}</span>
+                <span>Cameras</span>
               </div>
-              <span className="font-mono">{stats.camerasActive} Cameras</span>
+
+              {/* Latency */}
+              <div className="header-chip">
+                <span className="value">{stats.avgProcessingTime}</span>
+                <span>Latency</span>
+              </div>
+
+              {/* Live Demo Toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-navy-300 font-medium uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>Live Demo</span>
+                <button
+                  onClick={() => setLiveDemoMode(!liveDemoMode)}
+                  className={`toggle-switch ${liveDemoMode ? 'active' : ''}`}
+                  aria-label="Toggle live demo mode"
+                  id="live-demo-toggle"
+                />
+              </div>
+
+              {/* Sound */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="header-icon-btn"
+                aria-label="Toggle sound"
+                id="sound-toggle"
+              >
+                {soundEnabled
+                  ? <Volume2 className="w-4 h-4" />
+                  : <VolumeX className="w-4 h-4" />
+                }
+              </button>
+
+              {/* Notification Bell */}
+              <button className="header-icon-btn relative" id="notification-bell">
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1 right-1.5 w-2 h-2 bg-alert-red rounded-full" />
+              </button>
+
+              {/* Settings */}
+              <button className="header-icon-btn" id="settings-btn">
+                <Settings className="w-4 h-4" />
+              </button>
+
+              {/* Profile Avatar */}
+              <div className="header-avatar" id="profile-avatar">
+                VG
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <Zap className="w-3.5 h-3.5 text-cyan-accent" />
-              <span className="text-cyan-accent font-mono font-semibold">{stats.avgProcessingTime}</span>
-              <span className="text-navy-400">latency</span>
-            </div>
+            {/* Animated gradient line */}
+            <div className="header-line absolute bottom-0 left-0 right-0" />
+          </header>
+
+          {/* ===== Stats Bar ===== */}
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <StatsBar stats={stats} violationCount={allViolations.length || stats.totalToday} />
           </div>
 
-          {/* Animated gradient line under header */}
-          <div className="header-line absolute bottom-0 left-0 right-0" />
-        </header>
+          {/* ===== Tab Content ===== */}
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Main 2-Panel Layout */}
+              <main className="main-grid flex-1 grid grid-cols-12 gap-6 p-6 min-h-0" style={{ position: 'relative', zIndex: 10 }}>
+                {/* LEFT PANEL */}
+                <section className="col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pr-2">
+                  <ImageAnalyzer
+                    ref={canvasRef}
+                    uploadedImage={uploadedImage}
+                    boundingBoxes={boundingBoxes}
+                    isProcessing={isProcessing}
+                    processingStep={processingStep}
+                    completedSteps={completedSteps}
+                    onImageUpload={processImage}
+                    highlightedBoxId={highlightedBoxId}
+                    liveDemoMode={liveDemoMode}
+                    modelReady={!!model}
+                  />
+                </section>
 
-        {/* ===== Stats Bar ===== */}
-        <div style={{ position: 'relative', zIndex: 10 }}>
-          <StatsBar stats={stats} violationCount={allViolations.length || stats.totalToday} />
-        </div>
+                {/* RIGHT PANEL */}
+                <section className="col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pl-2">
+                  <DetectionResults
+                    violations={violations}
+                    isProcessing={isProcessing}
+                    onHighlightBox={handleHighlightBox}
+                    canvasRef={canvasRef}
+                  />
+                </section>
+              </main>
 
-        {/* ===== Main 3-Panel Layout ===== */}
-        <main className="main-grid flex-1 grid grid-cols-12 gap-4 p-4 min-h-0" style={{ position: 'relative', zIndex: 10 }}>
-          {/* LEFT PANEL */}
-          <section className="col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
-            <ImageAnalyzer
-              ref={canvasRef}
-              uploadedImage={uploadedImage}
-              boundingBoxes={boundingBoxes}
-              isProcessing={isProcessing}
-              processingStep={processingStep}
-              completedSteps={completedSteps}
-              onImageUpload={processImage}
-              highlightedBoxId={highlightedBoxId}
-              liveDemoMode={liveDemoMode}
-              modelReady={!!model}
-            />
-          </section>
+              {/* Map Panel */}
+              <div className="px-6 pb-6" style={{ position: 'relative', zIndex: 10 }}>
+                <ViolationMap
+                  violations={violations}
+                  liveDemoMode={liveDemoMode}
+                />
+              </div>
+            </>
+          )}
 
-          {/* CENTER PANEL */}
-          <section className="col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto px-1">
-            <DetectionResults
-              violations={violations}
-              isProcessing={isProcessing}
-              onHighlightBox={handleHighlightBox}
-              canvasRef={canvasRef}
-            />
-          </section>
+          {activeTab === 'analytics' && (
+            <main className="flex-1 p-6" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="max-w-5xl mx-auto">
+                <AnalyticsDashboard
+                  violations={allViolations.length > 0 ? allViolations : violations}
+                  onExportCSV={exportCSV}
+                  stats={stats}
+                />
+              </div>
+            </main>
+          )}
 
-          {/* RIGHT PANEL */}
-          <section className="col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto pl-1">
-            <AnalyticsDashboard
-              violations={allViolations.length > 0 ? allViolations : violations}
-              onExportCSV={exportCSV}
-              stats={stats}
-            />
-          </section>
-        </main>
+          {activeTab === 'live-feed' && (
+            <main className="flex-1 p-6 grid grid-cols-2 gap-6" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="flex flex-col gap-6">
+                <ImageAnalyzer
+                  ref={canvasRef}
+                  uploadedImage={uploadedImage}
+                  boundingBoxes={boundingBoxes}
+                  isProcessing={isProcessing}
+                  processingStep={processingStep}
+                  completedSteps={completedSteps}
+                  onImageUpload={processImage}
+                  highlightedBoxId={highlightedBoxId}
+                  liveDemoMode={liveDemoMode}
+                  modelReady={!!model}
+                />
+              </div>
+              <div className="flex flex-col gap-6">
+                <DetectionResults
+                  violations={violations}
+                  isProcessing={isProcessing}
+                  onHighlightBox={handleHighlightBox}
+                  canvasRef={canvasRef}
+                />
+              </div>
+            </main>
+          )}
 
-        {/* ===== Map Panel ===== */}
-        <div className="px-4 pb-4" style={{ position: 'relative', zIndex: 10 }}>
-          <ViolationMap
-            violations={violations}
-            liveDemoMode={liveDemoMode}
-          />
-        </div>
+          {activeTab === 'archive' && (
+            <main className="flex-1 p-6" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="max-w-7xl mx-auto">
+                <ArchivePanel
+                  archive={archiveViolations}
+                  setArchive={setArchiveViolations}
+                />
+              </div>
+            </main>
+          )}
 
-        {/* ===== Bottom Ticker ===== */}
-        <div style={{ position: 'relative', zIndex: 10 }}>
-          <LiveTicker events={liveEvents} liveDemoMode={liveDemoMode} />
+          {/* ===== Bottom Ticker ===== */}
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <LiveTicker events={liveEvents} liveDemoMode={liveDemoMode} />
+          </div>
         </div>
       </div>
     </>

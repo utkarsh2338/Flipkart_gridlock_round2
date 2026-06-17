@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowUpRight,
   Trophy,
+  AlertTriangle,
 } from 'lucide-react';
 import { generateHourlyData, generateViolationBreakdown } from '../data/mockData';
 
@@ -82,6 +83,51 @@ function RankingBar({ name, count, maxCount, rank, delay }) {
   );
 }
 
+// ===== Top Offenders Component =====
+function TopOffenders({ violations }) {
+  const plateCounts = useMemo(() => {
+    const counts = {};
+    violations.forEach(v => {
+      const plate = v.licensePlate || 'Unknown';
+      counts[plate] = (counts[plate] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [violations]);
+
+  if (plateCounts.length === 0) return null;
+
+  return (
+    <div className="glass-card p-3.5 animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.3s' }}>
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="w-3.5 h-3.5 text-alert-red" />
+        <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>
+          Top Offenders
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {plateCounts.map(([plate, count], idx) => {
+          const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-default';
+          const countClass = count >= 5 ? 'high' : 'medium';
+          return (
+            <div key={plate} className="top-offender-item">
+              <div className={`offender-rank ${rankClass}`}>
+                {idx + 1}
+              </div>
+              <div className="offender-plate">{plate}</div>
+              <div className={`offender-count-badge ${countClass}`}>
+                <span className="text-sm font-bold">{count}</span>
+                <span className="offender-count-label">Violations</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
   const breakdownData = useMemo(() => generateViolationBreakdown(), []);
   const hourlyData = useMemo(() => generateHourlyData(), []);
@@ -109,8 +155,8 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
       <div className="flex items-center justify-between">
         <div className="section-header">
           <BarChart3 className="w-4 h-4 text-cyan-accent" />
-          <h2 className="text-sm font-semibold text-white/90 tracking-wide">
-            Analytics Dashboard
+          <h2 className="text-sm font-semibold text-white/90 tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+            Violation Breakdown
           </h2>
         </div>
         <button
@@ -123,42 +169,18 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
         </button>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { value: stats.totalToday, label: 'Today', color: 'text-alert-red', trend: '+12.3%', trendColor: 'text-alert-red' },
-          { value: stats.detectionAccuracy + '%', label: 'Accuracy', color: 'text-success-green', trend: '+0.4%', trendColor: 'text-success-green' },
-          { value: stats.avgProcessingTime, label: 'Latency', color: 'text-cyan-accent', trend: '-3ms', trendColor: 'text-cyan-accent' },
-        ].map((s, i) => (
-          <div key={i} className="glass-card p-3 text-center">
-            <p className={`text-xl font-extrabold ${s.color} font-mono`}>{s.value}</p>
-            <p className="text-[9px] text-navy-300 uppercase tracking-[0.12em] mt-0.5">{s.label}</p>
-            <div className="flex items-center justify-center gap-1 mt-1">
-              <ArrowUpRight className={`w-3 h-3 ${s.trendColor}`} />
-              <span className={`text-[10px] ${s.trendColor} font-medium`}>{s.trend}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Donut Chart with Center Text */}
       <div className="glass-card p-3.5">
-        <div className="flex items-center gap-2 mb-3">
-          <PieChartIcon className="w-3.5 h-3.5 text-cyan-accent" />
-          <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
-            Violation Breakdown
-          </span>
-        </div>
         <div className="flex items-center gap-4">
-          <div className="relative w-[140px] h-[140px] shrink-0">
+          <div className="relative w-[160px] h-[160px] shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={breakdownData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={38}
-                  outerRadius={62}
+                  innerRadius={42}
+                  outerRadius={70}
                   paddingAngle={3}
                   dataKey="value"
                   strokeWidth={0}
@@ -174,38 +196,37 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
             </ResponsiveContainer>
             {/* Center text */}
             <div className="donut-center-text">
-              <p className="text-lg font-extrabold text-white font-mono">{animatedTotal}</p>
-              <p className="text-[8px] text-navy-300 uppercase tracking-wider">Total</p>
+              <p className="text-2xl font-extrabold font-mono" style={{ color: 'var(--color-cyan-accent)' }}>{animatedTotal}</p>
+              <p className="text-[8px] text-navy-300 uppercase tracking-[0.15em] font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Total</p>
             </div>
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            {breakdownData.map((item, idx) => {
-              const pct = ((item.value / totalViolations) * 100).toFixed(1);
-              return (
-                <div key={idx} className="flex items-center gap-2 group cursor-default hover:bg-white/[0.02] rounded px-1 py-0.5 transition-colors">
-                  <div
-                    className="w-2.5 h-2.5 rounded-sm shrink-0 transition-transform group-hover:scale-125"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="text-[11px] text-navy-200 truncate flex-1 group-hover:text-white/80 transition-colors">
-                    {item.name}
-                  </span>
-                  <span className="text-[10px] font-mono text-navy-400">{pct}%</span>
-                  <span className="text-[11px] font-mono font-semibold text-white/60 w-7 text-right">
-                    {item.value}
-                  </span>
-                </div>
-              );
-            })}
+            {breakdownData.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 group cursor-default hover:bg-white/[0.02] rounded px-1 py-0.5 transition-colors">
+                <div
+                  className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform group-hover:scale-125"
+                  style={{ backgroundColor: item.fill }}
+                />
+                <span className="text-[11px] text-navy-200 truncate flex-1 group-hover:text-white/80 transition-colors">
+                  {item.name}
+                </span>
+                <span className="text-[11px] font-mono font-semibold text-white/60 w-7 text-right">
+                  {item.value}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* Top Offenders (license plate based) */}
+      <TopOffenders violations={violations} />
 
       {/* Hourly Area Chart */}
       <div className="glass-card p-3.5">
         <div className="flex items-center gap-2 mb-3">
           <Clock className="w-3.5 h-3.5 text-cyan-accent" />
-          <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
+          <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>
             Violations by Hour
           </span>
         </div>
@@ -269,12 +290,12 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
         </div>
       </div>
 
-      {/* Top Violations Ranking */}
+      {/* Current Session Rankings */}
       {topViolations.length > 0 && (
         <div className="glass-card p-3.5 animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.2s' }}>
           <div className="flex items-center gap-2 mb-2.5">
             <Trophy className="w-3.5 h-3.5 text-warning-orange" />
-            <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
+            <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>
               Current Session
             </span>
           </div>

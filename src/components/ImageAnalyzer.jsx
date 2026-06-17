@@ -347,102 +347,113 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
         </div>
       )}
 
-      {/* Preprocessing Pipeline */}
+      {/* Side-by-Side Pipeline & Summary Panel */}
       {uploadedImage && (
-        <div className="glass-card p-3.5">
-          <div className="flex items-center gap-2 mb-3">
-            <Cpu className="w-3.5 h-3.5 text-cyan-accent" />
-            <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
-              Preprocessing Pipeline
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            {PREPROCESSING_STEPS.map((step, idx) => {
-              const isCompleted = completedSteps.includes(idx);
-              const isActive = processingStep === idx && !isCompleted;
-              return (
-                <div
-                  key={idx}
-                  className={`flex flex-col rounded-lg transition-all duration-300 px-3 py-2 ${
-                    isCompleted
-                      ? 'step-completed'
-                      : isActive
-                      ? 'animate-shimmer bg-cyan-accent/[0.04]'
-                      : 'opacity-30'
-                  }`}
-                  style={{
-                    animationDelay: `${idx * 300}ms`,
-                  }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {isCompleted ? (
-                      <AnimatedCheck />
-                    ) : isActive ? (
-                      <Loader2 className="w-3.5 h-3.5 text-cyan-accent animate-spin shrink-0" />
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border border-navy-500/50 shrink-0" />
-                    )}
-                    <span className={`text-xs font-medium ${
-                      isCompleted ? 'text-success-green' : isActive ? 'text-cyan-accent' : 'text-navy-400'
-                    }`}>
-                      {step.label}
-                    </span>
-                  </div>
-                  {/* Progress bar under each step */}
-                  {(isCompleted || isActive) && (
-                    <div className="step-progress-bar ml-6 mt-1">
-                      {isCompleted && <div className="step-progress-fill" />}
-                      {isActive && (
-                        <div className="h-full bg-gradient-to-r from-cyan-accent/60 to-cyan-accent/20 rounded animate-processing" style={{ width: '70%' }} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Preprocessing Pipeline */}
+          <div className="glass-card p-3.5">
+            <div className="flex items-center gap-2 mb-3">
+              <Cpu className="w-3.5 h-3.5 text-cyan-accent" />
+              <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
+                Preprocessing Pipeline
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              {PREPROCESSING_STEPS.map((step, idx) => {
+                const isCompleted = completedSteps.includes(idx);
+                const isActive = processingStep === idx && !isCompleted;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col rounded-lg transition-all duration-300 px-3 py-1.5 ${
+                      isCompleted
+                        ? 'step-completed'
+                        : isActive
+                        ? 'animate-shimmer bg-cyan-accent/[0.04]'
+                        : 'opacity-30'
+                    }`}
+                    style={{
+                      animationDelay: `${idx * 300}ms`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {isCompleted ? (
+                        <AnimatedCheck />
+                      ) : isActive ? (
+                        <Loader2 className="w-3.5 h-3.5 text-cyan-accent animate-spin shrink-0" />
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full border border-navy-500/50 shrink-0" />
                       )}
+                      <span className={`text-[11px] font-medium ${
+                        isCompleted ? 'text-success-green' : isActive ? 'text-cyan-accent' : 'text-navy-400'
+                      }`}>
+                        {step.label}
+                      </span>
                     </div>
-                  )}
+                    {/* Progress bar under each step */}
+                    {(isCompleted || isActive) && (
+                      <div className="step-progress-bar ml-6 mt-1">
+                        {isCompleted && <div className="step-progress-fill" />}
+                        {isActive && (
+                          <div className="h-full bg-gradient-to-r from-cyan-accent/60 to-cyan-accent/20 rounded animate-processing" style={{ width: '70%' }} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Panel: Detection Summary & Actions */}
+          <div className="flex flex-col gap-4">
+            {boundingBoxes.length > 0 && !isProcessing ? (
+              <div className="glass-card p-3.5 flex-1 flex flex-col justify-between animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.1s' }}>
+                <div>
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-accent" />
+                    <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">Detection Summary</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { count: boundingBoxes.filter(b => b.type === 'vehicle').length, label: 'Vehicles', color: 'text-success-green' },
+                      { count: boundingBoxes.filter(b => b.type === 'violation').length, label: 'Violations', color: 'text-alert-red' },
+                      { count: boundingBoxes.filter(b => b.type === 'plate').length, label: 'Plates', color: 'text-warning-orange' },
+                    ].map((item, i) => (
+                      <div key={i} className="bg-white/[0.03] rounded-xl p-2 border border-white/[0.04]">
+                        <p className={`text-base font-bold ${item.color} font-mono`}>{item.count}</p>
+                        <p className="text-[9px] text-navy-300 mt-0.5">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Detection Summary */}
-      {boundingBoxes.length > 0 && !isProcessing && (
-        <div className="glass-card p-3.5 animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.1s' }}>
-          <div className="flex items-center gap-2 mb-2.5">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-accent" />
-            <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">Detection Summary</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              { count: boundingBoxes.filter(b => b.type === 'vehicle').length, label: 'Vehicles', color: 'text-success-green' },
-              { count: boundingBoxes.filter(b => b.type === 'violation').length, label: 'Violations', color: 'text-alert-red' },
-              { count: boundingBoxes.filter(b => b.type === 'plate').length, label: 'Plates', color: 'text-warning-orange' },
-            ].map((item, i) => (
-              <div key={i} className="bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.04]">
-                <p className={`text-lg font-bold ${item.color} font-mono`}>{item.count}</p>
-                <p className="text-[10px] text-navy-300 mt-0.5">{item.label}</p>
               </div>
-            ))}
+            ) : (
+              <div className="glass-card p-3.5 flex-1 flex items-center justify-center border border-dashed border-white/[0.05]">
+                <span className="text-xs text-navy-400 font-medium">Pipeline running...</span>
+              </div>
+            )}
+
+            {/* Upload Another Button */}
+            {!isProcessing && !liveDemoMode && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary w-full py-2.5 flex items-center justify-center gap-2"
+                id="upload-another-btn"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Analyze Another Image
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFile(e.target.files[0])}
+                />
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-      {/* Upload Another */}
-      {uploadedImage && !isProcessing && !liveDemoMode && (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="btn-secondary w-full flex items-center justify-center gap-2"
-          id="upload-another-btn"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Analyze Another Image
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files[0])}
-          />
-        </button>
       )}
     </div>
   );

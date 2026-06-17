@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AlertTriangle,
   ChevronRight,
@@ -81,41 +81,44 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
       {/* NEW Badge */}
       {showNew && <div className="new-badge">NEW</div>}
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2.5">
+      {/* Top Row: Severity Badge + Violation Name + Time */}
+      <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2.5">
-          <span className="text-xl">{violation.type.icon}</span>
-          <div>
-            <h3 className="text-[13px] font-semibold text-white/90 leading-tight">
-              {violation.type.name}
-            </h3>
-            <p className="text-[10px] text-navy-300 mt-0.5 leading-snug">
-              {violation.type.description}
-            </p>
-          </div>
-        </div>
-        {/* Severity badge with ping */}
-        <div className="relative">
-          <span
-            className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full relative z-10 ${
-              violation.severity === 'high'
-                ? 'bg-alert-red/15 text-alert-red'
-                : 'bg-warning-orange/15 text-warning-orange'
-            }`}
-          >
-            {violation.severity}
+          {/* Severity Badge v2 */}
+          <span className={`severity-badge-v2 ${violation.severity}`}>
+            {violation.severity === 'high' ? '● Severe Violation' : '● Medium Risk'}
           </span>
-          {violation.severity === 'high' && (
-            <span className="absolute inset-0 rounded-full bg-alert-red/20 animate-ping" />
-          )}
+        </div>
+        <span className="text-xs text-navy-300 font-mono tabular-nums">
+          {violation.timestamp.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })}
+        </span>
+      </div>
+
+      {/* Violation Name */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="text-lg">{violation.type.icon}</span>
+        <h3 className="text-[14px] font-bold text-white/95 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+          {violation.type.name}
+        </h3>
+      </div>
+
+      {/* License Plate */}
+      <div className="mb-2.5">
+        <div className="license-plate">
+          <div className="plate-header">IND</div>
+          <div className="plate-text">{violation.licensePlate}</div>
         </div>
       </div>
 
-      {/* Confidence Bar — animated fill */}
-      <div className="mb-3">
+      {/* Confidence Bar — compact */}
+      <div className="mb-2.5">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] text-navy-300 uppercase tracking-[0.1em]">Confidence</span>
-          <span className="text-xs font-bold font-mono text-white/90">
+          <span className="text-[9px] text-navy-400 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>Confidence</span>
+          <span className="text-xs font-bold font-mono text-white/80">
             {violation.confidence.toFixed(1)}%
           </span>
         </div>
@@ -131,38 +134,16 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
         </div>
       </div>
 
-      {/* Info Grid */}
-      <div className="grid grid-cols-2 gap-2 mb-2.5">
+      {/* Info Row */}
+      <div className="flex items-center gap-4 mb-2 text-[11px] text-navy-300">
         <div className="flex items-center gap-1.5">
-          <Car className="w-3 h-3 text-navy-300" />
-          <span className="text-xs text-navy-200">{violation.vehicleType}</span>
+          <Car className="w-3 h-3 text-navy-400" />
+          <span>{violation.vehicleType}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Clock className="w-3 h-3 text-navy-300" />
-          <span className="text-xs text-navy-200">
-            {violation.timestamp.toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
-          </span>
+          <MapPin className="w-3 h-3 text-navy-400" />
+          <span className="truncate max-w-[120px]">{violation.cameraId}</span>
         </div>
-      </div>
-
-      {/* License Plate — styled like real Indian plate */}
-      <div className="mb-2.5">
-        <div className="license-plate">
-          <div className="plate-header">IND</div>
-          <div className="plate-text">{violation.licensePlate}</div>
-        </div>
-      </div>
-
-      {/* Camera location */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <MapPin className="w-3 h-3 text-navy-400" />
-        <span className="text-[10px] text-navy-300 truncate">
-          {violation.cameraId}
-        </span>
       </div>
 
       {/* Expanded Details */}
@@ -174,7 +155,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
               Evidence Details
             </span>
           </div>
-          <div className="bg-white/[0.03] rounded-xl p-2.5 text-[11px] font-mono text-navy-200 space-y-1 border border-white/[0.04]">
+          <div className="bg-white/[0.03] rounded-lg p-2.5 text-[11px] font-mono text-navy-200 space-y-1 border border-white/[0.04]">
             <p><span className="text-navy-400">Camera:</span> {violation.cameraId}</p>
             <p><span className="text-navy-400">Frame:</span> #{Math.floor(Math.random() * 9000 + 1000)}</p>
             <p><span className="text-navy-400">Model:</span> COCO-SSD (TensorFlow.js)</p>
@@ -184,7 +165,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
         </div>
       )}
 
-      {/* View Evidence Button with border-beam */}
+      {/* View Evidence Button */}
       <button
         className="btn-evidence w-full mt-2.5 flex items-center justify-center gap-1.5"
         onClick={(e) => {
@@ -230,6 +211,12 @@ export default function DetectionResults({
   const prevCountRef = useRef(0);
   const [newViolationIds, setNewViolationIds] = useState(new Set());
 
+  // Auto-generate a session ID
+  const sessionId = useMemo(() => {
+    const num = String(Math.floor(Math.random() * 9000 + 1000));
+    return `#VG-${num}`;
+  }, []);
+
   useEffect(() => {
     if (violations.length > prevCountRef.current) {
       const newIds = new Set(violations.slice(prevCountRef.current).map(v => v.id));
@@ -240,24 +227,28 @@ export default function DetectionResults({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Section Header */}
+      {/* Section Header with Session ID */}
       <div className="flex items-center justify-between">
         <div className="section-header red">
           <AlertTriangle className="w-4 h-4 text-alert-red" />
-          <h2 className="text-sm font-semibold text-white/90 tracking-wide">
+          <h2 className="text-sm font-semibold text-white/90 tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
             Detection Results
           </h2>
         </div>
-        {violations.length > 0 && (
-          <span className="text-[11px] font-mono text-navy-300 bg-white/[0.04] px-2.5 py-1 rounded-full border border-white/[0.06]">
-            {violations.length} found
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {violations.length > 0 && (
+            <span className="text-[11px] font-mono text-navy-300 bg-white/[0.04] px-2.5 py-1 rounded-full border border-white/[0.06]">
+              {violations.length} found
+            </span>
+          )}
+          <span className="session-id">Session ID: {sessionId}</span>
+        </div>
       </div>
 
       {/* Loading State — Skeleton */}
       {isProcessing && (
-        <div className="flex flex-col gap-2.5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -279,7 +270,7 @@ export default function DetectionResults({
 
       {/* Violation Cards */}
       {!isProcessing && violations.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {violations.map((violation, idx) => (
             <ViolationCard
               key={violation.id}

@@ -1,14 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  AlertTriangle,
-  TrendingUp,
-  Camera,
-  ShieldCheck,
-  IndianRupee,
-  BarChart3,
-  Target,
-  FileCheck2,
-} from 'lucide-react';
 
 // ===== Animated Counter Hook =====
 function useAnimatedCounter(target, duration = 1500) {
@@ -62,7 +52,7 @@ function Sparkline({ color = '#00d4ff', data }) {
   }).join(' ');
 
   return (
-    <svg width={w} height={h} className="sparkline-container" viewBox={`0 0 ${w} ${h}`}>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="sparkline-wrap">
       <polyline
         points={pathPoints}
         fill="none"
@@ -78,99 +68,81 @@ function Sparkline({ color = '#00d4ff', data }) {
 export default function StatsBar({ stats, violationCount }) {
   const items = [
     {
-      icon: AlertTriangle,
       label: 'Violations Today',
       rawValue: violationCount,
       suffix: '',
-      color: 'text-alert-red',
-      borderColor: '#ff4444',
+      colorClass: '',
+      sparkColor: '#ff4444',
       sparkData: [12, 18, 14, 22, 19, 28, 24],
       isNumeric: true,
+      iconEmoji: '📊',
     },
     {
-      icon: TrendingUp,
       label: 'This Week',
       rawValue: stats.totalThisWeek,
       suffix: '',
-      color: 'text-warning-orange',
-      borderColor: '#ff8c00',
+      colorClass: '',
+      sparkColor: '#ff8c00',
       sparkData: [40, 52, 48, 61, 55, 58, 62],
       isNumeric: true,
+      iconEmoji: '📈',
     },
     {
-      icon: Target,
-      label: 'Detection Accuracy',
+      label: 'Accuracy',
       rawValue: stats.detectionAccuracy,
       suffix: '%',
-      color: 'text-success-green',
-      borderColor: '#00c853',
+      colorClass: 'success',
+      sparkColor: '#00c853',
       sparkData: [94, 95, 95.2, 95.8, 96, 96.1, 96.3],
       isNumeric: true,
       decimals: 1,
+      iconEmoji: '⚡',
     },
     {
-      icon: Camera,
-      label: 'Active Cameras',
-      rawValue: stats.camerasActive,
-      suffix: '',
-      color: 'text-cyan-accent',
-      borderColor: '#00d4ff',
-      sparkData: [42, 44, 45, 46, 48, 48, 48],
-      isNumeric: true,
-    },
-    {
-      icon: FileCheck2,
-      label: 'Challans Issued',
-      rawValue: stats.challansIssued,
-      suffix: '',
-      color: 'text-purple-400',
-      borderColor: '#a855f7',
-      sparkData: [50, 68, 72, 85, 91, 98, 72],
-      isNumeric: true,
-    },
-    {
-      icon: IndianRupee,
-      label: 'Revenue Today',
+      label: 'Revenue',
       rawValue: stats.revenueToday,
       suffix: '',
-      color: 'text-emerald-400',
-      borderColor: '#34d399',
+      colorClass: 'revenue',
+      sparkColor: '#34d399',
       sparkData: [2.1, 2.8, 3.2, 3.5, 3.9, 4.1, 4.3],
       isNumeric: false,
+      sub: '+12% vs last week',
+      iconEmoji: '💰',
     },
     {
-      icon: ShieldCheck,
-      label: 'Most Common',
-      rawValue: 'No Helmet',
+      label: 'Hotspot',
+      rawValue: 'Silk Board',
       suffix: '',
-      color: 'text-rose-400',
-      borderColor: '#fb7185',
+      colorClass: 'warning',
+      sparkColor: '#ff8c00',
       sparkData: [28, 32, 35, 31, 38, 34, 34],
       isNumeric: false,
-      small: true,
+      sub: 'High violation cluster',
+      iconEmoji: '📍',
     },
     {
-      icon: BarChart3,
-      label: 'Avg Latency',
-      rawValue: stats.avgProcessingTime,
+      label: 'System',
+      rawValue: '99.9%',
       suffix: '',
-      color: 'text-cyan-accent',
-      borderColor: '#00d4ff',
-      sparkData: [52, 50, 49, 48, 47, 47, 47],
+      colorClass: 'success',
+      sparkColor: '#00c853',
+      sparkData: [99.5, 99.7, 99.8, 99.9, 99.9, 99.9, 99.9],
       isNumeric: false,
+      sub: 'Uptime Stable',
+      iconEmoji: '🖥️',
     },
   ];
 
   return (
-    <div className="stats-scroll flex items-center gap-3 px-4 py-2.5 overflow-x-auto border-b border-white/[0.03]">
+    <div className="stats-scroll flex items-center gap-4 px-6 py-4 overflow-x-auto border-b border-white/[0.03]">
       {items.map((item, idx) => (
-        <StatChip key={idx} item={item} index={idx} />
+        <StatCardV2 key={idx} item={item} index={idx} />
       ))}
     </div>
   );
 }
 
-function StatChip({ item, index }) {
+function StatCardV2({ item, index }) {
   const { count, flash } = useAnimatedCounter(
     item.isNumeric ? item.rawValue : 0,
     1500
@@ -185,31 +157,29 @@ function StatChip({ item, index }) {
 
   return (
     <div
-      className={`stat-chip flex items-center gap-3 shrink-0 animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
+      className={`stat-card-v2 flex-1 shrink-0 animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
       style={{
         animationDelay: `${index * 70}ms`,
         opacity: 0,
-        '--stat-border': item.borderColor,
       }}
     >
-      {/* Colored left border */}
-      <style>{`
-        .stat-chip:nth-child(${index + 1})::before {
-          background: ${item.borderColor};
-          box-shadow: 0 0 8px ${item.borderColor}40;
-        }
-      `}</style>
-
-      <div className={`p-2 rounded-xl bg-white/[0.03]`}>
-        <item.icon className={`w-4 h-4 ${item.color} animate-icon-pulse`} />
+      <div className="stat-label">
+        <span>{item.label}</span>
+        <span className="stat-icon text-base">{item.iconEmoji}</span>
       </div>
-      <div className="relative">
-        <p className="text-[9px] text-navy-300 uppercase tracking-[0.1em] font-medium">{item.label}</p>
-        <p className={`${item.small ? 'text-xs' : 'text-sm'} font-bold text-white/90 font-mono`}>
-          {displayValue}
-        </p>
+      <div className={`stat-value ${item.colorClass}`}>
+        {displayValue}
       </div>
-      <Sparkline color={item.borderColor} data={item.sparkData} />
+      {item.sub && (
+        <div className="stat-sub">
+          {item.sub.startsWith('+') ? (
+            <span className="trend">{item.sub}</span>
+          ) : (
+            <span>{item.sub}</span>
+          )}
+        </div>
+      )}
+      <Sparkline color={item.sparkColor} data={item.sparkData} />
     </div>
   );
 }
