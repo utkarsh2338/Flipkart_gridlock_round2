@@ -159,17 +159,7 @@ VisionGuard AI is designed with modular layers to support scaling from single-in
 3.  **Federated Learning Optimization:**
     Enable edge nodes to train locally on weather anomalies (heavy rain, fog, low-light monsoons) and send periodic weight gradients to the central BTP servers via federated learning, improving overall model robustness without centralizing sensitive public camera feeds.
 
----
 
-## 👥 Team Gridlock Avengers
-
-We are a team of passionate engineers committed to engineering solutions for metropolitan traffic issues.
-
-*   **Aravind S.** - *Machine Learning Lead* ([@aravinds-ml](https://github.com)) - YOLOv8 training, optimization, and edge pipeline.
-*   **Deepa R.** - *Frontend & UI/UX Architect* ([@deepar-design](https://github)) - React 19 components, MapmyIndia Leaflet maps, and responsiveness.
-*   **Utkarsh Dwivedi** - *Systems Integration & Legal Automation* ([@utkarsh2338](https://github)) - Challan compilation engine, Gemini NLU, and database.
-
----
 
 ## 📄 License
 
