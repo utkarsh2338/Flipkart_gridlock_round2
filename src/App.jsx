@@ -6,6 +6,7 @@ import DetectionResults from './components/DetectionResults';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import LiveTicker from './components/LiveTicker';
 import ModelLoadingOverlay from './components/ModelLoadingOverlay';
+import ViolationMap from './components/ViolationMap';
 import useTFModel from './hooks/useTFModel';
 import { runFullPipeline } from './data/aiDetection';
 import {
@@ -165,6 +166,7 @@ export default function App() {
   const liveDemoRef = useRef(null);
   const imgDimRef = useRef({ w: 800, h: 500 });
   const soundRef = useRef(false);
+  const canvasRef = useRef(null);
 
   // TensorFlow.js model
   const { model, isLoading: modelLoading, loadProgress, error: modelError } = useTFModel();
@@ -397,6 +399,7 @@ export default function App() {
           {/* LEFT PANEL */}
           <section className="col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
             <ImageAnalyzer
+              ref={canvasRef}
               uploadedImage={uploadedImage}
               boundingBoxes={boundingBoxes}
               isProcessing={isProcessing}
@@ -415,6 +418,7 @@ export default function App() {
               violations={violations}
               isProcessing={isProcessing}
               onHighlightBox={handleHighlightBox}
+              canvasRef={canvasRef}
             />
           </section>
 
@@ -427,6 +431,14 @@ export default function App() {
             />
           </section>
         </main>
+
+        {/* ===== Map Panel ===== */}
+        <div className="px-4 pb-4" style={{ position: 'relative', zIndex: 10 }}>
+          <ViolationMap
+            violations={violations}
+            liveDemoMode={liveDemoMode}
+          />
+        </div>
 
         {/* ===== Bottom Ticker ===== */}
         <div style={{ position: 'relative', zIndex: 10 }}>

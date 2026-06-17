@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import {
   Upload,
   ImagePlus,
@@ -26,7 +26,7 @@ function AnimatedCheck() {
   );
 }
 
-export default function ImageAnalyzer({
+const ImageAnalyzer = forwardRef(function ImageAnalyzer({
   uploadedImage,
   boundingBoxes,
   isProcessing,
@@ -36,8 +36,11 @@ export default function ImageAnalyzer({
   highlightedBoxId,
   liveDemoMode,
   modelReady,
-}) {
+}, ref) {
   const canvasRef = useRef(null);
+
+  // Expose the canvas ref to parent components
+  useImperativeHandle(ref, () => canvasRef.current, [canvasRef.current]);
   const containerRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -443,4 +446,6 @@ export default function ImageAnalyzer({
       )}
     </div>
   );
-}
+});
+
+export default ImageAnalyzer;

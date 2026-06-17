@@ -9,7 +9,14 @@ import {
   ShieldAlert,
   Loader2,
   Camera,
+  FileText,
+  Archive,
 } from 'lucide-react';
+import {
+  openChallanWindow,
+  downloadEvidenceZip,
+  captureCanvasSnapshot,
+} from '../data/challanGenerator';
 
 // ===== Skeleton Shimmer Block =====
 function SkeletonCard() {
@@ -31,7 +38,7 @@ function SkeletonCard() {
   );
 }
 
-function ViolationCard({ violation, index, onHighlight, isNew }) {
+function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
   const [expanded, setExpanded] = useState(false);
   const [showNew, setShowNew] = useState(isNew);
 
@@ -51,6 +58,18 @@ function ViolationCard({ violation, index, onHighlight, isNew }) {
       : violation.confidence > 75
       ? 'linear-gradient(90deg, #ff8c00, #ffa726)'
       : 'linear-gradient(90deg, #ffd600, #ffca28)';
+
+  const handleGenerateChallan = (e) => {
+    e.stopPropagation();
+    const snapshot = captureCanvasSnapshot(canvasRef?.current);
+    openChallanWindow(violation, snapshot);
+  };
+
+  const handleDownloadZip = (e) => {
+    e.stopPropagation();
+    const snapshot = captureCanvasSnapshot(canvasRef?.current);
+    downloadEvidenceZip(violation, snapshot);
+  };
 
   return (
     <div
@@ -178,6 +197,26 @@ function ViolationCard({ violation, index, onHighlight, isNew }) {
         View Evidence
         <ChevronRight className="w-3 h-3" />
       </button>
+
+      {/* Challan & Evidence Actions */}
+      <div className="grid grid-cols-2 gap-2 mt-2">
+        <button
+          className="btn-challan flex items-center justify-center gap-1.5"
+          onClick={handleGenerateChallan}
+          id={`generate-challan-${violation.id}`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>📄 Generate Challan</span>
+        </button>
+        <button
+          className="btn-evidence-zip flex items-center justify-center gap-1.5"
+          onClick={handleDownloadZip}
+          id={`download-zip-${violation.id}`}
+        >
+          <Archive className="w-3.5 h-3.5" />
+          <span>Evidence ZIP</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -186,6 +225,7 @@ export default function DetectionResults({
   violations,
   isProcessing,
   onHighlightBox,
+  canvasRef,
 }) {
   const prevCountRef = useRef(0);
   const [newViolationIds, setNewViolationIds] = useState(new Set());
@@ -247,6 +287,7 @@ export default function DetectionResults({
               index={idx}
               onHighlight={onHighlightBox}
               isNew={newViolationIds.has(violation.id)}
+              canvasRef={canvasRef}
             />
           ))}
         </div>
