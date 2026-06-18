@@ -63,7 +63,7 @@ VisionGuard AI is designed to process video frames at low latency, generating le
 ```mermaid
 graph TD
     A[📹 CCTV Feed / Video Upload] --> B[⚙️ Image Preprocessing Pipeline<br/>Noise Deblur, CLAHE Contrast, Resolution Upscaling]
-    B --> C[🧠 TensorFlow.js YOLOv8 Engine<br/>Edge Vehicle & Person Detection]
+    B --> C[🧠 TensorFlow.js + COCO-SSD Engine<br/>Edge Vehicle & Person Detection]
     C --> D[⚖️ Violation Classifier Heuristics<br/>Overlaps, Flow Directions, Static Zones]
     D --> E[🗄️ Evidence Store DB<br/>Annotated Frames + License Plates + Metadata]
     E --> F[📊 Interactive Officer Dashboard<br/>Live Map, Ticker, & Analytics]
@@ -87,7 +87,7 @@ graph TD
 | Layer | Technologies | Role & Purpose |
 | :--- | :--- | :--- |
 | **Frontend Framework** | React 19, Vite | Core reactive application architecture and hot module reloading build system. |
-| **Edge Deep Learning** | TensorFlow.js (COCO-SSD & Custom Weights) | Real-time browser-side vehicle, license plate, and pedestrian detection. |
+| **Edge Deep Learning** | TensorFlow.js + COCO-SSD (lite_mobilenet_v2 base) | TensorFlow.js + COCO-SSD (lite_mobilenet_v2 base) for object detection, with rule-based heuristics for violation classification. |
 | **Geospatial Mapping** | Leaflet.js, CartoDB Maps | Interactive dark-themed mapping showing coordinate-linked violation pins. |
 | **Data Analytics** | Recharts | Generates breakdown donut charts and hourly traffic violation trends. |
 | **GenAI Integration** | Google Gemini API (v1beta) | Contextual assistant chatbot initialized with session stats & Motor Vehicle laws. |
@@ -114,18 +114,7 @@ Every infraction detected by VisionGuard AI maps to the relevant section of the 
 
 ## 📈 Model Performance & Benchmarks
 
-The edge detection module utilizes a quantized YOLOv8 model optimized for mobile and web execution. Below are the metrics verified against benchmark city road datasets:
-
-| Violation Class | Precision (P) | Recall (R) | mAP @ 0.5 | Inference Latency (Edge) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Helmet Non-Compliance** | 94.8% | 93.1% | 94.1% | ~22ms |
-| **Triple Riding** | 92.5% | 91.0% | 91.8% | ~24ms |
-| **Seatbelt Compliance** | 89.2% | 88.0% | 88.5% | ~28ms |
-| **Red-Light Crossing** | 96.5% | 95.8% | 96.2% | ~15ms |
-| **Stop-Line Violation** | 95.2% | 94.0% | 94.7% | ~18ms |
-| **Wrong-Side Driving** | 93.7% | 92.4% | 93.1% | ~20ms |
-| **Illegal Parking** | 91.0% | 90.5% | 90.8% | ~25ms |
-| **License Plate Recognition (OCR)**| 95.8% | 94.2% | 95.0% | ~32ms |
+See the in-app Accountability tab for our real evaluation methodology and honest per-class metrics (macro F1 ~67% on 847 hand-labeled BTP frames, Phase 1 prototype benchmark).
 
 ---
 
@@ -135,7 +124,7 @@ You can launch the complete VisionGuard AI application locally on your machine i
 
 ```bash
 # Command 1: Clone the repository and navigate into the folder
-git clone https://github.com/gridlock-hackathon/VisionGuard-AI.git && cd VisionGuard-AI
+git clone https://github.com/utkarsh2338/Flipkart_gridlock_round2.git && cd Flipkart_gridlock_round2
 
 # Command 2: Install all required project dependencies
 npm install
