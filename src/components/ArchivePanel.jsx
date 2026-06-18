@@ -310,7 +310,7 @@ export default function ArchivePanel({ archive, setArchive }) {
                 placeholder="e.g. KA 51 YZ 6789"
                 value={searchPlate}
                 onChange={(e) => setSearchPlate(e.target.value)}
-                className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white/90 placeholder-navy-500 outline-none transition-all"
+                className="input-premium w-full pl-10"
               />
             </div>
           </div>
@@ -323,7 +323,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="all">All Violations</option>
               {Object.entries(VIOLATION_TYPES).map(([key, val]) => (
@@ -342,7 +342,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={filterSeverity}
               onChange={(e) => setFilterSeverity(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="all">All Severities</option>
               <option value="high">Severe Violation</option>
@@ -358,7 +358,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="all">All Statuses</option>
               <option value="Pending">Pending</option>
@@ -376,7 +376,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>
@@ -397,7 +397,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="all">All Locations</option>
               {cameraLocations.map(loc => (
@@ -414,7 +414,7 @@ export default function ArchivePanel({ archive, setArchive }) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-navy-950/60 hover:bg-navy-950/90 border border-white/[0.08] focus:border-cyan-accent/50 rounded-xl py-2.5 px-4 text-sm text-white/90 outline-none transition-all cursor-pointer"
+              className="select-premium w-full"
             >
               <option value="date-newest">Date: Newest First</option>
               <option value="date-oldest">Date: Oldest First</option>
@@ -426,7 +426,7 @@ export default function ArchivePanel({ archive, setArchive }) {
       </div>
 
       {/* Archive List / Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card-premium overflow-hidden">
         {filteredArchive.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="w-12 h-12 text-navy-600 mb-3 animate-pulse" />
@@ -441,7 +441,7 @@ export default function ArchivePanel({ archive, setArchive }) {
           <>
             {/* Desktop Table View */}
             <div className="hidden lg:block overflow-x-auto">
-              <table className="archive-table w-full border-collapse text-left">
+              <table className="table-premium archive-table w-full border-collapse text-left">
                 <thead>
                   <tr>
                     <th className="py-4 px-6 font-bold text-[11px] text-navy-300 uppercase tracking-widest border-b border-white/[0.06]">

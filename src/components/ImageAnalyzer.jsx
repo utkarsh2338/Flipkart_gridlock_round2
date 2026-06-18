@@ -289,19 +289,19 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
       {/* Upload Zone / Canvas */}
       {!uploadedImage ? (
         <div
-          className={`upload-zone flex flex-col items-center justify-center py-16 px-6 cursor-pointer ${isDragOver ? 'drag-over' : ''}`}
+          className={`upload-zone-premium flex flex-col items-center justify-center py-16 px-6 cursor-pointer ${isDragOver ? 'drag-over' : ''}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current?.click()}
           id="upload-zone"
         >
-          <div className="animate-float">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-4 mx-auto border border-white/[0.06] shadow-lg shadow-cyan-accent/5">
-              <ImagePlus className="w-8 h-8 text-cyan-accent/60" />
+          <div className="float-gentle">
+            <div className="w-20 h-20 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-4 mx-auto border border-white/[0.06] shadow-lg shadow-cyan-accent/5">
+              <ImagePlus className="w-10 h-10 text-cyan-accent/60" />
             </div>
           </div>
-          <p className="text-sm font-medium text-white/70 mb-1">
+          <p className="text-sm font-semibold text-white/80 mb-1">
             Drop traffic image here
           </p>
           <p className="text-xs text-navy-300">
@@ -317,7 +317,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
       ) : (
         <div 
           ref={containerRef} 
-          className={`canvas-container relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''} ${isSampleFrame ? 'cursor-pointer hover:shadow-cyan-accent/10 border border-transparent hover:border-cyan-500/20 transition-all' : ''}`}
+          className={`canvas-glow-frame relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''} ${isSampleFrame ? 'cursor-pointer hover:shadow-cyan-accent/10 border border-transparent hover:border-cyan-500/20 transition-all' : ''}`}
           onClick={handleCanvasClick}
         >
           {isSampleFrame && (
@@ -373,7 +373,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
       {uploadedImage && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Preprocessing Pipeline */}
-          <div className="glass-card p-3.5">
+          <div className="glass-card-premium p-3.5">
             <div className="flex items-center gap-2 mb-3">
               <Cpu className="w-3.5 h-3.5 text-cyan-accent" />
               <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.1em]">
@@ -430,7 +430,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
           {/* Right Panel: Detection Summary & Actions */}
           <div className="flex flex-col gap-4">
             {boundingBoxes.length > 0 && !isProcessing ? (
-              <div className="glass-card p-3.5 flex-1 flex flex-col justify-between animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.1s' }}>
+              <div className="glass-card-premium p-3.5 flex-1 flex flex-col justify-between animate-fade-in-scale" style={{ opacity: 0, animationDelay: '0.1s' }}>
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-accent" />
@@ -451,7 +451,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
                 </div>
               </div>
             ) : (
-              <div className="glass-card p-3.5 flex-1 flex items-center justify-center border border-dashed border-white/[0.05]">
+              <div className="glass-card-premium p-3.5 flex-1 flex items-center justify-center border border-dashed border-white/[0.05]">
                 <span className="text-xs text-navy-400 font-medium">Pipeline running...</span>
               </div>
             )}
@@ -460,7 +460,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
             {!isProcessing && !liveDemoMode && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="btn-secondary w-full py-2.5 flex items-center justify-center gap-2"
+                className="btn-secondary btn-glow w-full py-2.5 flex items-center justify-center gap-2"
                 id="upload-another-btn"
               >
                 <Upload className="w-3.5 h-3.5" />

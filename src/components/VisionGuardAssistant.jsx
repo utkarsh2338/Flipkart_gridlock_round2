@@ -428,9 +428,9 @@ export default function VisionGuardAssistant({ violations, archiveData }) {
   };
 
   return (
-    <div className="assistant-widget" style={{ zIndex: 1000 }}>
+    <div className="assistant-widget assistant-premium" style={{ zIndex: 1000 }}>
       {/* Floating Chat Panel */}
-      <div className={`assistant-panel glass-card ${isOpen ? 'open' : ''}`}>
+      <div className={`assistant-panel glass-card-premium ${isOpen ? 'open' : ''}`}>
         {/* Header */}
         <div className="assistant-header">
           <div className="flex items-center gap-2">

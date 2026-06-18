@@ -15,6 +15,17 @@ export default function ModelLoadingOverlay({ progress, visible }) {
       {/* Background glow effects */}
       <div className="model-loading-glow model-loading-glow-1" />
       <div className="model-loading-glow model-loading-glow-2" />
+      <div className="model-loading-glow model-loading-glow-3" style={{
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        background: 'radial-gradient(circle, rgba(0,212,255,0.08), transparent 70%)',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        filter: 'blur(60px)',
+        animation: 'model-glow-drift 8s ease-in-out infinite alternate',
+      }} />
 
       {/* Grid pattern */}
       <div className="model-loading-grid" />

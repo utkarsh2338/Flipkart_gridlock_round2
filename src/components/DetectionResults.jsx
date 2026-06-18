@@ -18,26 +18,6 @@ import {
   captureCanvasSnapshot,
 } from '../data/challanGenerator';
 
-// ===== Skeleton Shimmer Block =====
-function SkeletonCard() {
-  return (
-    <div className="glass-card p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="skeleton-block w-8 h-8 rounded-lg" />
-        <div className="flex-1 space-y-1.5">
-          <div className="skeleton-block w-3/4 h-3 rounded" />
-          <div className="skeleton-block w-1/2 h-2.5 rounded" />
-        </div>
-      </div>
-      <div className="skeleton-block w-full h-2 rounded" />
-      <div className="grid grid-cols-2 gap-2">
-        <div className="skeleton-block h-3 rounded" />
-        <div className="skeleton-block h-3 rounded" />
-      </div>
-    </div>
-  );
-}
-
 function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
   const [expanded, setExpanded] = useState(false);
   const [showNew, setShowNew] = useState(isNew);
@@ -50,7 +30,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
   }, [isNew]);
 
   const severityClass =
-    violation.severity === 'high' ? 'severity-high' : 'severity-medium';
+    violation.severity === 'high' ? 'severity-high-premium' : 'severity-medium-premium';
 
   const confidenceGradient =
     violation.confidence > 90
@@ -73,7 +53,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
 
   return (
     <div
-      className={`violation-card ${severityClass} animate-slide-in-right`}
+      className={`violation-card-premium ${severityClass} animate-slide-in-right`}
       style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
       onClick={() => setExpanded(!expanded)}
       id={`violation-card-${violation.id}`}
@@ -167,7 +147,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
 
       {/* View Evidence Button */}
       <button
-        className="btn-evidence w-full mt-2.5 flex items-center justify-center gap-1.5"
+        className="btn-evidence btn-glow w-full mt-2.5 flex items-center justify-center gap-1.5"
         onClick={(e) => {
           e.stopPropagation();
           onHighlight(violation.boxId);
@@ -182,7 +162,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
       {/* Challan & Evidence Actions */}
       <div className="grid grid-cols-2 gap-2 mt-2">
         <button
-          className="btn-challan flex items-center justify-center gap-1.5"
+          className="btn-challan btn-glow flex items-center justify-center gap-1.5"
           onClick={handleGenerateChallan}
           id={`generate-challan-${violation.id}`}
         >
@@ -190,7 +170,7 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
           <span>📄 Generate Challan</span>
         </button>
         <button
-          className="btn-evidence-zip flex items-center justify-center gap-1.5"
+          className="btn-evidence-zip btn-glow flex items-center justify-center gap-1.5"
           onClick={handleDownloadZip}
           id={`download-zip-${violation.id}`}
         >
@@ -248,16 +228,68 @@ export default function DetectionResults({
       {/* Loading State — Skeleton */}
       {isProcessing && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          <div className="glass-card-premium p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-block w-8 h-8 rounded-lg skeleton-shimmer" />
+              <div className="flex-1 space-y-1.5">
+                <div className="skeleton-block w-3/4 h-3 rounded skeleton-shimmer" />
+                <div className="skeleton-block w-1/2 h-2.5 rounded skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="skeleton-block w-full h-2 rounded skeleton-shimmer" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+            </div>
+          </div>
+          <div className="glass-card-premium p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-block w-8 h-8 rounded-lg skeleton-shimmer" />
+              <div className="flex-1 space-y-1.5">
+                <div className="skeleton-block w-3/4 h-3 rounded skeleton-shimmer" />
+                <div className="skeleton-block w-1/2 h-2.5 rounded skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="skeleton-block w-full h-2 rounded skeleton-shimmer" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+            </div>
+          </div>
+          <div className="glass-card-premium p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-block w-8 h-8 rounded-lg skeleton-shimmer" />
+              <div className="flex-1 space-y-1.5">
+                <div className="skeleton-block w-3/4 h-3 rounded skeleton-shimmer" />
+                <div className="skeleton-block w-1/2 h-2.5 rounded skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="skeleton-block w-full h-2 rounded skeleton-shimmer" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+            </div>
+          </div>
+          <div className="glass-card-premium p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-block w-8 h-8 rounded-lg skeleton-shimmer" />
+              <div className="flex-1 space-y-1.5">
+                <div className="skeleton-block w-3/4 h-3 rounded skeleton-shimmer" />
+                <div className="skeleton-block w-1/2 h-2.5 rounded skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="skeleton-block w-full h-2 rounded skeleton-shimmer" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+              <div className="skeleton-block h-3 rounded skeleton-shimmer" />
+            </div>
+          </div>
         </div>
       )}
 
       {/* Empty State */}
       {!isProcessing && violations.length === 0 && (
-        <div className="glass-card flex flex-col items-center justify-center py-16">
+        <div className="glass-card-premium flex flex-col items-center justify-center py-16">
           <div className="relative mb-4">
             <Camera className="w-10 h-10 text-navy-500 animate-icon-pulse" />
           </div>

@@ -155,19 +155,31 @@ function StatCardV2({ item, index }) {
       ) + item.suffix
     : item.rawValue;
 
+  const accentColors = {
+    'Violations Today': 'var(--color-alert-red)',
+    'This Week': 'var(--color-warning-orange)',
+    'Accuracy': 'var(--color-success-green)',
+    'EST. FINE VALUE (PENDING REVIEW)': '#34d399',
+    'Hotspot': 'var(--color-warning-orange)',
+    'System': 'var(--color-success-green)',
+  };
+
+  const accentColor = accentColors[item.label] || 'var(--color-cyan-accent)';
+
   return (
     <div
-      className={`stat-card-v2 w-full animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
+      className={`stat-card-premium w-full animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
       style={{
         animationDelay: `${index * 70}ms`,
         opacity: 0,
+        '--accent-color': accentColor,
       }}
     >
       <div className="stat-label">
         <span>{item.label}</span>
         <span className="stat-icon text-base">{item.iconEmoji}</span>
       </div>
-      <div className={`stat-value ${item.colorClass}`}>
+      <div className={`stat-value ${item.colorClass}`} style={{ color: accentColor }}>
         {displayValue}
       </div>
       {item.sub && (

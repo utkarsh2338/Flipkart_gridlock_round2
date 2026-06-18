@@ -49,12 +49,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function KpiCard({ icon: Icon, label, value, accent }) {
   return (
-    <div className="analytics-kpi glass-card">
-      <div className="analytics-kpi-icon" style={{ color: accent }}>
+    <div className="glass-card-premium analytics-kpi">
+      <div className="analytics-kpi-icon" style={{ color: accent, borderColor: `${accent}30` }}>
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="analytics-kpi-value">{value}</p>
+        <p className="analytics-kpi-value" style={{ color: accent }}>{value}</p>
         <p className="analytics-kpi-label">{label}</p>
       </div>
     </div>
@@ -170,7 +170,7 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
   }, [hourlyData]);
 
   return (
-    <div className="analytics-dashboard w-full flex flex-col gap-5 md:gap-6">
+    <div className="analytics-dashboard w-full flex flex-col gap-5 md:gap-6 page-transition">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="section-header">
@@ -180,7 +180,7 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
           </h2>
         </div>
         <button
-          className="btn-secondary flex items-center gap-1.5 text-xs self-start sm:self-auto"
+          className="btn-secondary btn-glow flex items-center gap-1.5 text-xs self-start sm:self-auto"
           onClick={onExportCSV}
           id="export-csv-btn"
         >
@@ -198,7 +198,7 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
       </div>
 
       {/* Full-width hourly chart */}
-      <div className="glass-card p-4 md:p-5 w-full">
+      <div className="glass-card-premium p-4 md:p-5 w-full">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-cyan-accent" />
@@ -274,7 +274,7 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
       {/* Breakdown + side panels */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 w-full">
         {/* Donut — spans 7 cols */}
-        <div className="lg:col-span-7 glass-card p-4 md:p-5">
+        <div className="lg:col-span-7 glass-card-premium p-4 md:p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-cyan-accent" />
             <span className="text-xs font-semibold text-white/80 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -338,7 +338,7 @@ export default function AnalyticsDashboard({ violations, onExportCSV, stats }) {
       </div>
 
       {/* Session rankings — full width */}
-      <div className="glass-card p-4 md:p-5 w-full">
+      <div className="glass-card-premium p-4 md:p-5 w-full">
         <div className="flex items-center gap-2 mb-4">
           <Trophy className="w-4 h-4 text-warning-orange" />
           <span className="text-xs font-semibold text-white/80 uppercase tracking-[0.1em]" style={{ fontFamily: 'var(--font-heading)' }}>

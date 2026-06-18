@@ -470,22 +470,27 @@ export default function App() {
           <header className="app-header" style={{ position: 'relative', zIndex: 50 }}>
             {/* Brand */}
             <div className="header-brand">
-              <span className="brand-name gradient-text">VISIONGUARD</span>
-              <span className="brand-name gradient-text-ai">AI</span>
+              <Shield className="w-5 h-5 text-cyan-accent mr-1.5" />
+              <span className="brand-name gradient-text glow-text">VISIONGUARD</span>
+              <span className="brand-name gradient-text-ai glow-text ml-1.5">AI</span>
             </div>
 
             {/* Navigation Tabs */}
-            <nav className="nav-tabs">
-              {NAV_TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  id={`nav-tab-${tab.id}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <nav className="nav-tabs nav-tabs-responsive">
+              {NAV_TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    className={`nav-tab-enhanced ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    id={`nav-tab-${tab.id}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </nav>
 
             {/* Right Section: Status + Controls */}
@@ -530,7 +535,7 @@ export default function App() {
               {/* Notification Bell */}
               <button className="header-icon-btn relative" id="notification-bell">
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1.5 w-2 h-2 bg-alert-red rounded-full" />
+                <span className="absolute top-1 right-1.5 w-2 h-2 bg-alert-red rounded-full animate-pulse" />
               </button>
 
               {/* Settings */}
@@ -555,7 +560,7 @@ export default function App() {
 
           {/* ===== Tab Content ===== */}
           {activeTab === 'dashboard' && (
-            <>
+            <div className="tab-content-enter">
               {/* Main 2-Panel Layout */}
               <main className="main-grid flex-1 grid grid-cols-12 gap-4 md:gap-6 p-4 md:p-6 min-h-0" style={{ position: 'relative', zIndex: 10 }}>
                 {/* LEFT PANEL */}
@@ -593,66 +598,74 @@ export default function App() {
                   liveDemoMode={liveDemoMode}
                 />
               </div>
-            </>
+            </div>
           )}
 
           {activeTab === 'analytics' && (
-            <main className="flex-1 p-4 md:p-6 w-full" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="max-w-7xl mx-auto w-full">
-                <AnalyticsDashboard
-                  violations={allViolations.length > 0 ? allViolations : violations}
-                  onExportCSV={exportCSV}
-                  stats={stats}
-                />
-              </div>
-            </main>
+            <div className="tab-content-enter">
+              <main className="flex-1 p-4 md:p-6 w-full" style={{ position: 'relative', zIndex: 10 }}>
+                <div className="max-w-7xl mx-auto w-full">
+                  <AnalyticsDashboard
+                    violations={allViolations.length > 0 ? allViolations : violations}
+                    onExportCSV={exportCSV}
+                    stats={stats}
+                  />
+                </div>
+              </main>
+            </div>
           )}
 
           {activeTab === 'live-feed' && (
-            <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="flex flex-col gap-4 md:gap-6">
-                <ImageAnalyzer
-                  ref={canvasRef}
-                  uploadedImage={uploadedImage}
-                  boundingBoxes={boundingBoxes}
-                  isProcessing={isProcessing}
-                  processingStep={processingStep}
-                  completedSteps={completedSteps}
-                  onImageUpload={processImage}
-                  highlightedBoxId={highlightedBoxId}
-                  liveDemoMode={liveDemoMode}
-                  modelReady={!!model}
-                  isSampleFrame={isSampleFrame}
-                />
-              </div>
-              <div className="flex flex-col gap-4 md:gap-6">
-                <DetectionResults
-                  violations={violations}
-                  isProcessing={isProcessing}
-                  onHighlightBox={handleHighlightBox}
-                  canvasRef={canvasRef}
-                />
-              </div>
-            </main>
+            <div className="tab-content-enter">
+              <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6" style={{ position: 'relative', zIndex: 10 }}>
+                <div className="flex flex-col gap-4 md:gap-6">
+                  <ImageAnalyzer
+                    ref={canvasRef}
+                    uploadedImage={uploadedImage}
+                    boundingBoxes={boundingBoxes}
+                    isProcessing={isProcessing}
+                    processingStep={processingStep}
+                    completedSteps={completedSteps}
+                    onImageUpload={processImage}
+                    highlightedBoxId={highlightedBoxId}
+                    liveDemoMode={liveDemoMode}
+                    modelReady={!!model}
+                    isSampleFrame={isSampleFrame}
+                  />
+                </div>
+                <div className="flex flex-col gap-4 md:gap-6">
+                  <DetectionResults
+                    violations={violations}
+                    isProcessing={isProcessing}
+                    onHighlightBox={handleHighlightBox}
+                    canvasRef={canvasRef}
+                  />
+                </div>
+              </main>
+            </div>
           )}
 
           {activeTab === 'archive' && (
-            <main className="flex-1 p-4 md:p-6" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="max-w-7xl mx-auto">
-                <ArchivePanel
-                  archive={archiveViolations}
-                  setArchive={setArchiveViolations}
-                />
-              </div>
-            </main>
+            <div className="tab-content-enter">
+              <main className="flex-1 p-4 md:p-6" style={{ position: 'relative', zIndex: 10 }}>
+                <div className="max-w-7xl mx-auto">
+                  <ArchivePanel
+                    archive={archiveViolations}
+                    setArchive={setArchiveViolations}
+                  />
+                </div>
+              </main>
+            </div>
           )}
 
           {activeTab === 'accountability' && (
-            <main className="flex-1 p-4 md:p-6 overflow-y-auto" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="max-w-7xl mx-auto">
-                <AccountabilityPanel />
-              </div>
-            </main>
+            <div className="tab-content-enter">
+              <main className="flex-1 p-4 md:p-6 overflow-y-auto" style={{ position: 'relative', zIndex: 10 }}>
+                <div className="max-w-7xl mx-auto">
+                  <AccountabilityPanel />
+                </div>
+              </main>
+            </div>
           )}
 
           {/* ===== Bottom Ticker ===== */}

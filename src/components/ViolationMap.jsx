@@ -225,7 +225,7 @@ export default function ViolationMap({ violations, liveDemoMode }) {
   }, [heatmapOn, mapReady]);
 
   return (
-    <div className="violation-map-panel glass-card" id="violation-map">
+    <div className="map-panel-premium glass-card-premium" id="violation-map">
       {/* Header */}
       <div className="violation-map-header">
         <div className="flex items-center gap-2">
