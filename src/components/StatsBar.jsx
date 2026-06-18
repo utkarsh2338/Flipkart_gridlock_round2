@@ -134,7 +134,7 @@ export default function StatsBar({ stats, violationCount }) {
   ];
 
   return (
-    <div className="stats-scroll flex items-center gap-4 px-6 py-4 overflow-x-auto border-b border-white/[0.03]">
+    <div className="stats-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 md:p-6 border-b border-white/[0.03]">
       {items.map((item, idx) => (
         <StatCardV2 key={idx} item={item} index={idx} />
       ))}
@@ -157,7 +157,7 @@ function StatCardV2({ item, index }) {
 
   return (
     <div
-      className={`stat-card-v2 flex-1 shrink-0 animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
+      className={`stat-card-v2 w-full animate-slide-up ${flash ? 'animate-count-flash' : ''}`}
       style={{
         animationDelay: `${index * 70}ms`,
         opacity: 0,

@@ -2,15 +2,17 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Shield, Zap, Eye, Radio, Volume2, VolumeX,
   Bell, Settings, LayoutDashboard, BarChart3,
-  Video, Archive,
+  Video, Archive, ShieldCheck,
 } from 'lucide-react';
 import StatsBar from './components/StatsBar';
 import ImageAnalyzer from './components/ImageAnalyzer';
 import DetectionResults from './components/DetectionResults';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ArchivePanel from './components/ArchivePanel';
+import AccountabilityPanel from './components/AccountabilityPanel';
 import LiveTicker from './components/LiveTicker';
 import ModelLoadingOverlay from './components/ModelLoadingOverlay';
+import VisionGuardAssistant from './components/VisionGuardAssistant';
 import ViolationMap from './components/ViolationMap';
 import useTFModel from './hooks/useTFModel';
 import { runFullPipeline } from './data/aiDetection';
@@ -161,6 +163,7 @@ const NAV_TABS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'live-feed', label: 'Live Feed', icon: Video },
   { id: 'archive', label: 'Archive', icon: Archive },
+  { id: 'accountability', label: 'Accountability', icon: ShieldCheck },
 ];
 
 export default function App() {
@@ -416,7 +419,7 @@ export default function App() {
 
               {/* Live Demo Toggle */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-navy-300 font-medium uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>Live Demo</span>
+                <span className="live-demo-label text-[10px] text-navy-300 font-medium uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>Live Demo</span>
                 <button
                   onClick={() => setLiveDemoMode(!liveDemoMode)}
                   className={`toggle-switch ${liveDemoMode ? 'active' : ''}`}
@@ -468,9 +471,9 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <>
               {/* Main 2-Panel Layout */}
-              <main className="main-grid flex-1 grid grid-cols-12 gap-6 p-6 min-h-0" style={{ position: 'relative', zIndex: 10 }}>
+              <main className="main-grid flex-1 grid grid-cols-12 gap-4 md:gap-6 p-4 md:p-6 min-h-0" style={{ position: 'relative', zIndex: 10 }}>
                 {/* LEFT PANEL */}
-                <section className="col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pr-2">
+                <section className="col-span-12 lg:col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pr-0 lg:pr-2">
                   <ImageAnalyzer
                     ref={canvasRef}
                     uploadedImage={uploadedImage}
@@ -486,7 +489,7 @@ export default function App() {
                 </section>
 
                 {/* RIGHT PANEL */}
-                <section className="col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pl-2">
+                <section className="col-span-12 lg:col-span-6 flex flex-col gap-6 min-h-0 overflow-y-auto pl-0 lg:pl-2">
                   <DetectionResults
                     violations={violations}
                     isProcessing={isProcessing}
@@ -497,7 +500,7 @@ export default function App() {
               </main>
 
               {/* Map Panel */}
-              <div className="px-6 pb-6" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="px-4 pb-4 md:px-6 md:pb-6" style={{ position: 'relative', zIndex: 10 }}>
                 <ViolationMap
                   violations={violations}
                   liveDemoMode={liveDemoMode}
@@ -507,8 +510,8 @@ export default function App() {
           )}
 
           {activeTab === 'analytics' && (
-            <main className="flex-1 p-6" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="max-w-5xl mx-auto">
+            <main className="flex-1 p-4 md:p-6 w-full" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="max-w-7xl mx-auto w-full">
                 <AnalyticsDashboard
                   violations={allViolations.length > 0 ? allViolations : violations}
                   onExportCSV={exportCSV}
@@ -519,8 +522,8 @@ export default function App() {
           )}
 
           {activeTab === 'live-feed' && (
-            <main className="flex-1 p-6 grid grid-cols-2 gap-6" style={{ position: 'relative', zIndex: 10 }}>
-              <div className="flex flex-col gap-6">
+            <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="flex flex-col gap-4 md:gap-6">
                 <ImageAnalyzer
                   ref={canvasRef}
                   uploadedImage={uploadedImage}
@@ -534,7 +537,7 @@ export default function App() {
                   modelReady={!!model}
                 />
               </div>
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 md:gap-6">
                 <DetectionResults
                   violations={violations}
                   isProcessing={isProcessing}
@@ -546,12 +549,20 @@ export default function App() {
           )}
 
           {activeTab === 'archive' && (
-            <main className="flex-1 p-6" style={{ position: 'relative', zIndex: 10 }}>
+            <main className="flex-1 p-4 md:p-6" style={{ position: 'relative', zIndex: 10 }}>
               <div className="max-w-7xl mx-auto">
                 <ArchivePanel
                   archive={archiveViolations}
                   setArchive={setArchiveViolations}
                 />
+              </div>
+            </main>
+          )}
+
+          {activeTab === 'accountability' && (
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto" style={{ position: 'relative', zIndex: 10 }}>
+              <div className="max-w-7xl mx-auto">
+                <AccountabilityPanel />
               </div>
             </main>
           )}
@@ -562,6 +573,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <VisionGuardAssistant violations={allViolations.length > 0 ? allViolations : violations} archiveData={archiveViolations} />
     </>
   );
 }

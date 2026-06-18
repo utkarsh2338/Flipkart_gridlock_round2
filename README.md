@@ -48,6 +48,11 @@ VisionGuard AI integrates full computer vision algorithms and heuristics to hand
 *   🗺️ **Interactive CartoDB Map:** Displays real-time geocoded violation hotspots across Bengaluru's major signals.
 *   🗄️ **Historical Evidence Archive:** Stores records locally and allows officers to search, filter by status, and export evidence packages.
 *   🤖 **VisionGuard Assistant:** An on-screen conversational chatbot using the Gemini API to analyze session violations, answer legal questions, and recommend patrol deployments.
+*   🛡️ **Human-AI Accountability Layer:** Confidence-gated triage (auto-confirm / review queue / discard), constable review workflow with adaptive thresholds, honest FP-by-condition reporting, and Phase 1 evaluation metrics — designed for real BTP deployment, not demo-only accuracy claims.
+
+### Responsible AI Statement
+
+VisionGuard AI is built for operational deployment alongside Bengaluru Traffic Police, not as a black-box automation layer. Every detection is confidence-gated into three tiers: high-confidence flags enter a challan-ready state subject to periodic human audit sampling; medium-confidence detections are routed to a constable review queue where officers confirm or reject before any enforcement action; low-confidence outputs are logged but never actioned. The system does not perform facial recognition, does not collect PII beyond license plates (the existing legal basis for challan issuance under the Motor Vehicles Act), and does not auto-issue challans without either ≥95% model confidence or explicit officer sign-off. Annotated evidence is retained on a configurable schedule (default 30 days) with encrypted storage and audit-logged officer actions. We publish modest Phase 1 benchmark numbers — macro F1 ~67% on hand-labeled BTP frames — because honest recall reporting drives the human-in-the-loop design; fine-tuning on the full BTP dataset is the planned path to production-grade accuracy. This architecture reflects how AI-assisted enforcement should work in a democratic policing context: augment officer judgment, never replace accountability.
 
 ---
 

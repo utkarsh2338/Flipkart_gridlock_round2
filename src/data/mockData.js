@@ -1,13 +1,13 @@
 // ===== VisionGuard AI — Simulated Detection Data =====
 
-const KARNATAKA_PLATES = [
+export const KARNATAKA_PLATES = [
   'KA 01 AB 1234', 'KA 02 CD 5678', 'KA 03 EF 9012', 'KA 04 GH 3456',
   'KA 05 MX 4821', 'KA 09 JK 7890', 'KA 12 LM 2345', 'KA 14 NP 6789',
   'KA 19 QR 0123', 'KA 22 ST 4567', 'KA 41 UV 8901', 'KA 50 WX 2345',
   'KA 51 YZ 6789', 'KA 53 AB 0124', 'KA 55 CD 4568', 'KA 03 MH 9921',
 ];
 
-const CAMERA_IDS = [
+export const CAMERA_IDS = [
   'CAM-001 Silk Board Junction',
   'CAM-007 Hebbal Flyover',
   'CAM-012 KR Puram Signal',

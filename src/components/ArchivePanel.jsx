@@ -18,7 +18,8 @@ import {
   Gauge,
   HelpCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Camera
 } from 'lucide-react';
 import { openChallanWindow, downloadEvidenceZip } from '../data/challanGenerator';
 import { VIOLATION_TYPES } from '../data/mockData';
@@ -273,21 +274,21 @@ export default function ArchivePanel({ archive, setArchive }) {
     <div className="flex flex-col gap-4">
       {/* Search and Filters panel */}
       <div className="glass-card p-6 space-y-6">
-        <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2.5">
               <Filter className="w-5 h-5 text-cyan-accent" />
               <h2 className="text-sm font-bold text-white/95 uppercase tracking-widest" style={{ fontFamily: 'var(--font-heading)' }}>
                 Historical Records Filter
               </h2>
             </div>
-            <span className="text-[11px] font-mono font-bold text-cyan-accent bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full shadow-sm">
+            <span className="text-[11px] font-mono font-bold text-cyan-accent bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full shadow-sm w-fit">
               {filteredArchive.length} of {archive.length} Items Found
             </span>
           </div>
           <button 
             onClick={handleResetFilters}
-            className="flex items-center gap-2 text-xs font-semibold text-navy-200 hover:text-cyan-accent transition-all bg-white/[0.03] hover:bg-white/[0.06] px-4 py-2 rounded-xl border border-white/[0.06] active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 text-xs font-semibold text-navy-200 hover:text-cyan-accent transition-all bg-white/[0.03] hover:bg-white/[0.06] px-4 py-2 rounded-xl border border-white/[0.06] active:scale-95 cursor-pointer w-full sm:w-auto justify-center"
           >
             <RotateCcw className="w-4 h-4" />
             Reset Filters
