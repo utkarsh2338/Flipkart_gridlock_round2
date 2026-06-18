@@ -234,7 +234,7 @@ export function generateSummaryStats() {
     avgProcessingTime: '47ms',
     camerasActive: 48,
     challansIssued: 723,
-    revenueToday: '₹4,33,800',
+    estimatedFineValue: '₹4,33,800',
   };
 }
 

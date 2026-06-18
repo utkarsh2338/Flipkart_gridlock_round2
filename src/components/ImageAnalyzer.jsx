@@ -36,6 +36,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
   highlightedBoxId,
   liveDemoMode,
   modelReady,
+  isSampleFrame,
 }, ref) {
   const canvasRef = useRef(null);
 
@@ -254,8 +255,22 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
     img.src = uploadedImage;
   }, [uploadedImage, animatedBoxes, highlightedBoxId]);
 
+  const handleCanvasClick = (e) => {
+    if (isSampleFrame) {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files[0])}
+        id="file-input"
+      />
       {/* Section Header */}
       <div className="section-header">
         <ScanLine className="w-4 h-4 text-cyan-accent" />
@@ -281,14 +296,6 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
           onClick={() => fileInputRef.current?.click()}
           id="upload-zone"
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files[0])}
-            id="file-input"
-          />
           <div className="animate-float">
             <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-4 mx-auto border border-white/[0.06] shadow-lg shadow-cyan-accent/5">
               <ImagePlus className="w-8 h-8 text-cyan-accent/60" />
@@ -308,7 +315,22 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
           </div>
         </div>
       ) : (
-        <div ref={containerRef} className={`canvas-container relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''}`}>
+        <div 
+          ref={containerRef} 
+          className={`canvas-container relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''} ${isSampleFrame ? 'cursor-pointer hover:shadow-cyan-accent/10 border border-transparent hover:border-cyan-500/20 transition-all' : ''}`}
+          onClick={handleCanvasClick}
+        >
+          {isSampleFrame && (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="absolute top-3 left-3 bg-cyan-950/90 border border-cyan-500/30 hover:bg-cyan-900/90 hover:border-cyan-400/50 cursor-pointer backdrop-blur text-cyan-accent text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg z-10 font-mono tracking-wider transition-all animate-pulse"
+            >
+              Demo frame — click to upload your own
+            </div>
+          )}
           <canvas ref={canvasRef} className="w-full" />
 
           {/* Scan Line */}
@@ -443,13 +465,6 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
               >
                 <Upload className="w-3.5 h-3.5" />
                 Analyze Another Image
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFile(e.target.files[0])}
-                />
               </button>
             )}
           </div>

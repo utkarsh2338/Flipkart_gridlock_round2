@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Shield, Zap, Eye, Radio, Volume2, VolumeX,
   Bell, Settings, LayoutDashboard, BarChart3,
@@ -21,6 +21,8 @@ import {
   generateSummaryStats,
   PREPROCESSING_STEPS,
   generateHistoricalArchive,
+  generateBoundingBoxes,
+  generateViolationResults,
 } from './data/mockData';
 
 // ===== Sample Image Generator =====
@@ -180,6 +182,7 @@ export default function App() {
   const [highlightedBoxId, setHighlightedBoxId] = useState(null);
   const [allViolations, setAllViolations] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [isSampleFrame, setIsSampleFrame] = useState(false);
 
   const [archiveViolations, setArchiveViolations] = useState(() => {
     const cached = localStorage.getItem('vg_archive_violations');
@@ -203,7 +206,37 @@ export default function App() {
     localStorage.setItem('vg_archive_violations', JSON.stringify(archiveViolations));
   }, [archiveViolations]);
 
-  const stats = generateSummaryStats();
+  const estimatedFineValueAmount = useMemo(() => {
+    const FINE_MAPPING = {
+      helmet: 500,
+      seatbelt: 1000,
+      triple_riding: 1000,
+      wrong_side: 1500,
+      stop_line: 1000,
+      red_light: 1000,
+      illegal_parking: 500,
+    };
+
+    return archiveViolations
+      .filter(v => {
+        if (v.status === 'Dismissed') return false;
+        const isAutoConfirmed = v.confidence >= 90;
+        const isOfficerConfirmed = v.status === 'Paid' || v.status === 'Challan Sent';
+        return isAutoConfirmed || isOfficerConfirmed;
+      })
+      .reduce((sum, v) => {
+        const fine = FINE_MAPPING[v.type?.id] || 500;
+        return sum + fine;
+      }, 0);
+  }, [archiveViolations]);
+
+  const stats = useMemo(() => {
+    const rawStats = generateSummaryStats();
+    return {
+      ...rawStats,
+      estimatedFineValue: `₹${estimatedFineValueAmount.toLocaleString('en-IN')}`,
+    };
+  }, [estimatedFineValueAmount]);
   const liveDemoRef = useRef(null);
   const imgDimRef = useRef({ w: 800, h: 500 });
   const soundRef = useRef(false);
@@ -238,7 +271,11 @@ export default function App() {
 
   // Process image with REAL AI detection
   const processImage = useCallback((imageSrc, dimensions) => {
+    const startTime = performance.now();
     setUploadedImage(imageSrc);
+    if (imageSrc !== '/sample-traffic.jpg') {
+      setIsSampleFrame(false);
+    }
     imgDimRef.current = dimensions || { w: 800, h: 500 };
     setIsProcessing(true);
     setProcessingStep(-1);
@@ -261,16 +298,21 @@ export default function App() {
     imgEl.onload = async () => {
       try {
         if (model) {
-          const { boxes, violations: viols } = await runFullPipeline(
+          let { boxes, violations: viols } = await runFullPipeline(
             model,
             imgEl,
             imgEl.naturalWidth,
             imgEl.naturalHeight
           );
 
+          if ((liveDemoMode || imageSrc === '/sample-traffic.jpg') && viols.length === 0) {
+            boxes = generateBoundingBoxes(imgEl.naturalWidth, imgEl.naturalHeight);
+            viols = generateViolationResults(boxes);
+          }
+
           // Wait for preprocessing animation to finish
           const maxDelay = Math.max(...PREPROCESSING_STEPS.map(s => s.delay));
-          const elapsed = performance.now();
+          const elapsed = performance.now() - startTime;
           const waitTime = Math.max(0, maxDelay + 500 - elapsed);
 
           setTimeout(() => {
@@ -304,12 +346,41 @@ export default function App() {
             }
           }, waitTime > 2000 ? 500 : waitTime);
         } else {
-          // Model not loaded yet — show empty results after animation
-          setTimeout(() => {
-            setBoundingBoxes([]);
-            setViolations([]);
-            setIsProcessing(false);
-          }, 2000);
+          // Model not loaded yet
+          if (liveDemoMode || imageSrc === '/sample-traffic.jpg') {
+            const boxes = generateBoundingBoxes(imgEl.naturalWidth, imgEl.naturalHeight);
+            const viols = generateViolationResults(boxes);
+            setTimeout(() => {
+              setBoundingBoxes(boxes);
+              setViolations(viols);
+              setAllViolations(prev => [...prev, ...viols]);
+
+              // Add newly detected violations to archive state
+              if (viols && viols.length > 0) {
+                const newArchiveEntries = viols.map(v => ({
+                  ...v,
+                  status: 'Pending',
+                  telemetry: {
+                    speed: Math.floor(40 + Math.random() * 40),
+                    speedLimit: 60,
+                    lane: Math.floor(1 + Math.random() * 3),
+                    bbox: { x: 20, y: 35, w: 25, h: 35 }
+                  }
+                }));
+                setArchiveViolations(prev => {
+                  const filteredPrev = prev.filter(p => !newArchiveEntries.some(n => n.id === p.id));
+                  return [...newArchiveEntries, ...filteredPrev];
+                });
+              }
+              setIsProcessing(false);
+            }, 2000);
+          } else {
+            setTimeout(() => {
+              setBoundingBoxes([]);
+              setViolations([]);
+              setIsProcessing(false);
+            }, 2000);
+          }
         }
       } catch (err) {
         console.error('Detection failed:', err);
@@ -321,7 +392,22 @@ export default function App() {
       }
     };
     imgEl.src = imageSrc;
-  }, [model]);
+  }, [model, liveDemoMode]);
+
+  const processImageRef = useRef(processImage);
+  useEffect(() => {
+    processImageRef.current = processImage;
+  }, [processImage]);
+
+  // Initial app load sample auto-detection run
+  useEffect(() => {
+    if (uploadedImage || liveDemoMode) return;
+    const timer = setTimeout(() => {
+      setIsSampleFrame(true);
+      processImageRef.current('/sample-traffic.jpg', { w: 800, h: 500 });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [uploadedImage, liveDemoMode]);
 
   // Live demo mode
   useEffect(() => {
@@ -485,6 +571,7 @@ export default function App() {
                     highlightedBoxId={highlightedBoxId}
                     liveDemoMode={liveDemoMode}
                     modelReady={!!model}
+                    isSampleFrame={isSampleFrame}
                   />
                 </section>
 
@@ -535,6 +622,7 @@ export default function App() {
                   highlightedBoxId={highlightedBoxId}
                   liveDemoMode={liveDemoMode}
                   modelReady={!!model}
+                  isSampleFrame={isSampleFrame}
                 />
               </div>
               <div className="flex flex-col gap-4 md:gap-6">

@@ -99,10 +99,10 @@ export default function StatsBar({ stats, violationCount }) {
       iconEmoji: '⚡',
     },
     {
-      label: 'Revenue',
-      rawValue: stats.revenueToday,
+      label: 'EST. FINE VALUE (PENDING REVIEW)',
+      rawValue: stats.estimatedFineValue,
       suffix: '',
-      colorClass: 'revenue',
+      colorClass: 'estimatedFineValue',
       sparkColor: '#34d399',
       sparkData: [2.1, 2.8, 3.2, 3.5, 3.9, 4.1, 4.3],
       isNumeric: false,

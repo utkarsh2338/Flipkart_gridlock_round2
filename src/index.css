@@ -457,7 +457,7 @@ body {
   color: var(--color-warning-orange);
 }
 
-.stat-card-v2 .stat-value.revenue {
+.stat-card-v2 .stat-value.estimatedFineValue {
   color: #34d399;
 }
 
