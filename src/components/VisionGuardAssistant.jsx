@@ -310,7 +310,7 @@ function buildResponse(query, data) {
 }
 
 
-export default function VisionGuardAssistant({ violations, archiveData }) {
+export default function VisionGuardAssistant({ violations, archiveData, demoOpen, demoQuery }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -322,6 +322,43 @@ export default function VisionGuardAssistant({ violations, archiveData }) {
   const [inputVal, setInputVal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Handle demo open request
+  useEffect(() => {
+    if (demoOpen) {
+      setIsOpen(true);
+    }
+  }, [demoOpen]);
+
+  // Handle demo query auto-typing and auto-send
+  useEffect(() => {
+    if (demoQuery && demoQuery.trim() && !isLoading) {
+      setIsOpen(true);
+      setInputVal('');
+
+      let currentText = '';
+      let index = 0;
+      const targetText = demoQuery;
+
+      const typingInterval = setInterval(() => {
+        if (index < targetText.length) {
+          currentText += targetText[index];
+          setInputVal(currentText);
+          index++;
+        } else {
+          clearInterval(typingInterval);
+          const sendTimer = setTimeout(() => {
+            handleSendRef.current?.(targetText);
+          }, 600);
+          return () => clearTimeout(sendTimer);
+        }
+      }, 50);
+
+      return () => {
+        clearInterval(typingInterval);
+      };
+    }
+  }, [demoQuery, isLoading]);
 
   // Merge archive + live violations, deduplicate by id
   const allData = useMemo(() => {
@@ -426,6 +463,12 @@ export default function VisionGuardAssistant({ violations, archiveData }) {
       setIsLoading(false);
     }
   };
+
+  // Ref to always call the latest handleSend (avoids stale closures in useEffect)
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
 
   return (
     <div className="assistant-widget assistant-premium" style={{ zIndex: 1000 }}>

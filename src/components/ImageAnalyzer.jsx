@@ -317,7 +317,7 @@ const ImageAnalyzer = forwardRef(function ImageAnalyzer({
       ) : (
         <div 
           ref={containerRef} 
-          className={`canvas-glow-frame relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''} ${isSampleFrame ? 'cursor-pointer hover:shadow-cyan-accent/10 border border-transparent hover:border-cyan-500/20 transition-all' : ''}`}
+          className={`canvas-container canvas-glow-frame relative ${imageReady ? 'animate-fade-in-scale' : 'opacity-0'} ${pulseHighlight ? 'canvas-highlight-pulse' : ''} ${isSampleFrame ? 'cursor-pointer hover:shadow-cyan-accent/10 border border-transparent hover:border-cyan-500/20 transition-all' : ''}`}
           onClick={handleCanvasClick}
         >
           {isSampleFrame && (

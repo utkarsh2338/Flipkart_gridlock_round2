@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
   Shield, Zap, Eye, Radio, Volume2, VolumeX,
   Bell, Settings, LayoutDashboard, BarChart3,
-  Video, Archive, ShieldCheck,
+  Video, Archive, ShieldCheck, Play,
 } from 'lucide-react';
 import StatsBar from './components/StatsBar';
 import ImageAnalyzer from './components/ImageAnalyzer';
@@ -14,6 +14,7 @@ import LiveTicker from './components/LiveTicker';
 import ModelLoadingOverlay from './components/ModelLoadingOverlay';
 import VisionGuardAssistant from './components/VisionGuardAssistant';
 import ViolationMap from './components/ViolationMap';
+import JudgeDemoOverlay from './components/JudgeDemoOverlay';
 import useTFModel from './hooks/useTFModel';
 import { runFullPipeline } from './data/aiDetection';
 import {
@@ -183,6 +184,11 @@ export default function App() {
   const [allViolations, setAllViolations] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [isSampleFrame, setIsSampleFrame] = useState(false);
+  const [judgeDemoActive, setJudgeDemoActive] = useState(false);
+  const [demoChatbotOpen, setDemoChatbotOpen] = useState(false);
+  const [demoChatbotQuery, setDemoChatbotQuery] = useState('');
+
+
 
   const [archiveViolations, setArchiveViolations] = useState(() => {
     const cached = localStorage.getItem('vg_archive_violations');
@@ -456,6 +462,59 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [violations, allViolations]);
 
+  // Judge Demo callbacks
+  const judgeDemoCallbacks = useMemo(() => ({
+    onLoadSample: () => {
+      setUploadedImage(null);
+      setBoundingBoxes([]);
+      setViolations([]);
+      setTimeout(() => {
+        setIsSampleFrame(true);
+        processImageRef.current('/sample-traffic.jpg', { w: 800, h: 500 });
+      }, 2000);
+    },
+    onTriggerDetection: () => {
+      processImageRef.current('/sample-traffic.jpg', { w: 800, h: 500 });
+    },
+    onSelectTab: (tab) => {
+      setActiveTab(tab);
+    },
+    onDropMapPin: () => {
+      setActiveTab('dashboard');
+      setViolations(prev => {
+        const hasSilkBoard = prev.some(v => v.cameraId && v.cameraId.includes('Silk Board'));
+        if (hasSilkBoard) return prev;
+
+        const mockSilkBoardViolation = {
+          id: 'demo-silk-board-' + Date.now(),
+          type: {
+            id: 'red_light',
+            name: 'Red Light Violation',
+            icon: '🚦',
+          },
+          confidence: 94.2,
+          vehicleType: 'Car',
+          licensePlate: 'KA-03-MY-1234',
+          cameraId: 'CAM-001 Silk Board Junction',
+          timestamp: new Date(),
+          severity: 'high',
+          boxId: 'demo-box-1',
+        };
+        return [mockSilkBoardViolation, ...prev];
+      });
+    },
+    onOpenChatbot: (query) => {
+      setDemoChatbotOpen(true);
+      setDemoChatbotQuery(query);
+    },
+  }), []);
+
+  const handleJudgeDemoClose = useCallback(() => {
+    setJudgeDemoActive(false);
+    setDemoChatbotOpen(false);
+    setDemoChatbotQuery('');
+  }, []);
+
   // Show model loading overlay after splash dismisses
   const showModelLoading = !showSplash && modelLoading;
 
@@ -518,6 +577,18 @@ export default function App() {
                   id="live-demo-toggle"
                 />
               </div>
+
+              {/* Judge Demo Button */}
+              <button
+                onClick={() => setJudgeDemoActive(true)}
+                className="judge-demo-nav-btn-header"
+                disabled={judgeDemoActive}
+                id="judge-demo-btn"
+                title="Start guided judge demo walkthrough"
+              >
+                <Play className="w-3.5 h-3.5" />
+                Judge Demo
+              </button>
 
               {/* Sound */}
               <button
@@ -674,7 +745,20 @@ export default function App() {
           </div>
         </div>
       </div>
-      <VisionGuardAssistant violations={allViolations.length > 0 ? allViolations : violations} archiveData={archiveViolations} />
+
+      {/* ===== Judge Demo Overlay ===== */}
+      <JudgeDemoOverlay
+        isActive={judgeDemoActive}
+        onClose={handleJudgeDemoClose}
+        callbacks={judgeDemoCallbacks}
+      />
+
+      <VisionGuardAssistant
+        violations={allViolations.length > 0 ? allViolations : violations}
+        archiveData={archiveViolations}
+        demoOpen={demoChatbotOpen}
+        demoQuery={demoChatbotQuery}
+      />
     </>
   );
 }

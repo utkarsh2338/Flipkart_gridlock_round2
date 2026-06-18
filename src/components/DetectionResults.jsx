@@ -206,7 +206,7 @@ export default function DetectionResults({
   }, [violations]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" id="detection-results-panel">
       {/* Section Header with Session ID */}
       <div className="flex items-center justify-between">
         <div className="section-header red">
