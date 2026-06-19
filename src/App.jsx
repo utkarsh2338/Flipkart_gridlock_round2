@@ -658,6 +658,8 @@ export default function App() {
                     isProcessing={isProcessing}
                     onHighlightBox={handleHighlightBox}
                     canvasRef={canvasRef}
+                    boundingBoxes={boundingBoxes}
+                    uploadedImage={uploadedImage}
                   />
                 </section>
               </main>
@@ -710,6 +712,8 @@ export default function App() {
                     isProcessing={isProcessing}
                     onHighlightBox={handleHighlightBox}
                     canvasRef={canvasRef}
+                    boundingBoxes={boundingBoxes}
+                    uploadedImage={uploadedImage}
                   />
                 </div>
               </main>

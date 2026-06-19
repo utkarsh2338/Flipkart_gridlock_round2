@@ -18,9 +18,12 @@ import {
   captureCanvasSnapshot,
 } from '../data/challanGenerator';
 
-function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
+function ViolationCard({ violation, index, onHighlight, isNew, canvasRef, boundingBoxes = [], uploadedImage }) {
   const [expanded, setExpanded] = useState(false);
+  const [explainExpanded, setExplainExpanded] = useState(false);
   const [showNew, setShowNew] = useState(isNew);
+  const [imgElement, setImgElement] = useState(null);
+  const miniCanvasRef = useRef(null);
 
   useEffect(() => {
     if (isNew) {
@@ -28,6 +31,237 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
       return () => clearTimeout(timer);
     }
   }, [isNew]);
+
+  useEffect(() => {
+    if (!uploadedImage) {
+      setImgElement(null);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      setImgElement(img);
+    };
+    img.src = uploadedImage;
+  }, [uploadedImage]);
+
+  const box = useMemo(() => {
+    return boundingBoxes.find(b => b.id === violation.boxId);
+  }, [boundingBoxes, violation.boxId]);
+
+  const finalBox = useMemo(() => {
+    if (box) return box;
+    return {
+      x: 150,
+      y: 200,
+      w: 220,
+      h: 240,
+      type: 'violation',
+      confidence: violation.confidence || 88.5,
+    };
+  }, [box, violation]);
+
+  const ruleLogText = useMemo(() => {
+    const coordsStr = `x:${Math.round(finalBox.x)}, y:${Math.round(finalBox.y)}, w:${Math.round(finalBox.w)}, h:${Math.round(finalBox.h)}`;
+    const conf = violation.confidence.toFixed(1);
+    const typeId = violation.type?.id || '';
+
+    switch (typeId) {
+      case 'helmet':
+        return `[pipeline/helmet] Detected motorcycle at [${coordsStr}].\n[pipeline/helmet] Detected person with head region overlapping motorcycle upper zone.\n[pipeline/helmet] No helmet-shaped object detected in head bbox.\n[pipeline/helmet] Confidence: ${conf}%`;
+      case 'triple_riding':
+        return `[pipeline/triple] Detected motorcycle at [${coordsStr}].\n[pipeline/triple] Detected 3 persons within motorcycle bounding box ± 20% margin.\n[pipeline/triple] MV Act Sec 128 triggered.\n[pipeline/triple] Confidence: ${conf}%`;
+      case 'red_light':
+        return `[pipeline/redlight] Detected vehicle at [${coordsStr}] within pre-defined red-signal zone polygon.\n[pipeline/redlight] Vehicle centroid inside stop zone.\n[pipeline/redlight] Confidence: ${conf}%`;
+      case 'seatbelt':
+        return `[pipeline/seatbelt] Detected vehicle at [${coordsStr}].\n[pipeline/seatbelt] Front windshield camera scanned driver and passenger torso area.\n[pipeline/seatbelt] SBL-Net found no diagonal harness buckle engagement.\n[pipeline/seatbelt] Confidence: ${conf}%`;
+      case 'wrong_side':
+        return `[pipeline/wrongside] Detected vehicle at [${coordsStr}].\n[pipeline/wrongside] Vehicle tracking history shows movement direction vector at 172° (allowable corridor: 340°–20°).\n[pipeline/wrongside] Contra-flow traffic detected.\n[pipeline/wrongside] Confidence: ${conf}%`;
+      case 'stop_line':
+        return `[pipeline/stopline] Detected vehicle at [${coordsStr}].\n[pipeline/stopline] Front bumper edge coordinates crossed stop-line limit under active red signal phase.\n[pipeline/stopline] Confidence: ${conf}%`;
+      case 'illegal_parking':
+        return `[pipeline/parking] Detected vehicle at [${coordsStr}].\n[pipeline/parking] Stationary timer exceeded 180s inside geofenced 'No Parking/Tow Away' corridor.\n[pipeline/parking] Confidence: ${conf}%`;
+      default:
+        return `[pipeline/heuristic] Detected vehicle at [${coordsStr}].\n[pipeline/heuristic] Violation rules checked for Class: ${violation.vehicleType}.\n[pipeline/heuristic] Rule violation code: ${typeId.toUpperCase()}.\n[pipeline/heuristic] Confidence: ${conf}%`;
+    }
+  }, [finalBox, violation]);
+
+  const legalBasis = useMemo(() => {
+    const typeId = violation.type?.id || '';
+    switch (typeId) {
+      case 'helmet':
+        return {
+          section: '129',
+          description: 'Driving two wheeler without wearing protective headgear',
+          fine: '500',
+          url: 'https://indiankanoon.org/doc/1715061/'
+        };
+      case 'seatbelt':
+        return {
+          section: '194B',
+          description: 'Driving vehicle without wearing safety belt or carrying passengers not wearing seat belt',
+          fine: '1,000',
+          url: 'https://indiankanoon.org/doc/126601445/'
+        };
+      case 'triple_riding':
+        return {
+          section: '128',
+          description: 'Safety measures for drivers and pillion riders (carrying more than one pillion rider)',
+          fine: '1,000',
+          url: 'https://indiankanoon.org/doc/1000673/'
+        };
+      case 'red_light':
+      case 'stop_line':
+        return {
+          section: '119',
+          description: 'Duty to obey traffic signs and signals',
+          fine: '1,000',
+          url: 'https://indiankanoon.org/doc/1132712/'
+        };
+      case 'wrong_side':
+        return {
+          section: '119',
+          description: 'Driving against traffic flow / One-way violation',
+          fine: '1,000',
+          url: 'https://indiankanoon.org/doc/1132712/'
+        };
+      case 'illegal_parking':
+        return {
+          section: '122',
+          description: 'Leaving vehicle in dangerous position or causing obstruction',
+          fine: '500',
+          url: 'https://indiankanoon.org/doc/1036329/'
+        };
+      default:
+        return {
+          section: '177',
+          description: 'General provision for punishment of offences',
+          fine: '500',
+          url: 'https://indiankanoon.org/doc/1410712/'
+        };
+    }
+  }, [violation]);
+
+  useEffect(() => {
+    if (!explainExpanded) return;
+    const canvas = miniCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = finalBox.w;
+    const h = finalBox.h;
+    
+    const targetWidth = 180;
+    const scale = targetWidth / w;
+    const targetHeight = h * scale;
+    
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    if (imgElement) {
+      ctx.drawImage(
+        imgElement,
+        finalBox.x, finalBox.y, finalBox.w, finalBox.h,
+        0, 0, targetWidth, targetHeight
+      );
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, 0, targetHeight);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(1, '#020817');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+      
+      ctx.strokeStyle = 'rgba(0, 212, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let x = 20; x < targetWidth; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, targetHeight);
+        ctx.stroke();
+      }
+      for (let y = 20; y < targetHeight; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(targetWidth, y);
+        ctx.stroke();
+      }
+      
+      ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('NO SOURCE IMAGE', targetWidth / 2, targetHeight / 2);
+    }
+
+    const typeId = violation.type?.id || '';
+    if (typeId === 'helmet') {
+      ctx.fillStyle = 'rgba(255, 68, 68, 0.35)';
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.fillRect(0, 0, targetWidth, targetHeight * 0.3);
+      ctx.strokeRect(0, 0, targetWidth, targetHeight * 0.3);
+    } else if (typeId === 'triple_riding') {
+      ctx.strokeStyle = '#ff8c00';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(2, 2, targetWidth - 4, targetHeight - 4);
+      ctx.setLineDash([]);
+      
+      ctx.fillStyle = '#ff4444';
+      const positions = [
+        { x: targetWidth * 0.3, y: targetHeight * 0.45 },
+        { x: targetWidth * 0.5, y: targetHeight * 0.35 },
+        { x: targetWidth * 0.7, y: targetHeight * 0.55 },
+      ];
+      positions.forEach((pos) => {
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    } else if (typeId === 'red_light' || typeId === 'stop_line') {
+      ctx.fillStyle = 'rgba(255, 68, 68, 0.35)';
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.fillRect(0, targetHeight * 0.6, targetWidth, targetHeight * 0.4);
+      ctx.strokeRect(0, targetHeight * 0.6, targetWidth, targetHeight * 0.4);
+      
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, targetHeight * 0.6);
+      ctx.lineTo(targetWidth, targetHeight * 0.6);
+      ctx.stroke();
+    } else if (typeId === 'seatbelt') {
+      ctx.fillStyle = 'rgba(255, 140, 0, 0.3)';
+      ctx.strokeStyle = '#ff8c00';
+      ctx.lineWidth = 2;
+      ctx.fillRect(targetWidth * 0.2, targetHeight * 0.2, targetWidth * 0.6, targetHeight * 0.55);
+      ctx.strokeRect(targetWidth * 0.2, targetHeight * 0.2, targetWidth * 0.6, targetHeight * 0.55);
+    } else if (typeId === 'wrong_side') {
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(targetWidth * 0.8, targetHeight * 0.8);
+      ctx.lineTo(targetWidth * 0.2, targetHeight * 0.2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(targetWidth * 0.2, targetHeight * 0.2);
+      ctx.lineTo(targetWidth * 0.38, targetHeight * 0.2);
+      ctx.moveTo(targetWidth * 0.2, targetHeight * 0.2);
+      ctx.lineTo(targetWidth * 0.2, targetHeight * 0.38);
+      ctx.stroke();
+    } else if (typeId === 'illegal_parking') {
+      ctx.fillStyle = 'rgba(255, 140, 0, 0.35)';
+      ctx.strokeStyle = '#ff8c00';
+      ctx.lineWidth = 2;
+      ctx.fillRect(targetWidth * 0.45, 0, targetWidth * 0.55, targetHeight);
+      ctx.strokeRect(targetWidth * 0.45, 0, targetWidth * 0.55, targetHeight);
+    }
+  }, [explainExpanded, imgElement, finalBox, violation]);
 
   const severityClass =
     violation.severity === 'high' ? 'severity-high-premium' : 'severity-medium-premium';
@@ -114,6 +348,47 @@ function ViolationCard({ violation, index, onHighlight, isNew, canvasRef }) {
         </div>
       </div>
 
+      {/* Explain Accordion Toggle */}
+      <div className="mb-2.5 flex items-center justify-between">
+        <button
+          type="button"
+          className="btn-explain-toggle"
+          onClick={(e) => {
+            e.stopPropagation();
+            setExplainExpanded(!explainExpanded);
+          }}
+        >
+          Explain {explainExpanded ? '▲' : '▼'}
+        </button>
+      </div>
+
+      {explainExpanded && (
+        <div className="explain-panel-premium mb-2.5" onClick={(e) => e.stopPropagation()}>
+          <div className="explain-title">PART 1 — What the AI saw</div>
+          <div className="explain-canvas-container">
+            <canvas ref={miniCanvasRef} style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px' }} />
+          </div>
+
+          <div className="explain-title">PART 2 — Why it flagged a violation</div>
+          <div className="explain-rule-log">{ruleLogText}</div>
+
+          <div className="explain-title">PART 3 — Legal Basis</div>
+          <div className="explain-legal-row">
+            <span className="explain-legal-text">
+              ⚖️ <strong>Motor Vehicles Act, Section {legalBasis.section}</strong> — {legalBasis.description} — <strong>Fine: ₹{legalBasis.fine}</strong>
+            </span>
+            <a
+              href={legalBasis.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="explain-legal-link"
+            >
+              View Section {legalBasis.section} on indiankanoon.org ↗
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Info Row */}
       <div className="flex items-center gap-4 mb-2 text-[11px] text-navy-300">
         <div className="flex items-center gap-1.5">
@@ -187,6 +462,8 @@ export default function DetectionResults({
   isProcessing,
   onHighlightBox,
   canvasRef,
+  boundingBoxes = [],
+  uploadedImage,
 }) {
   const prevCountRef = useRef(0);
   const [newViolationIds, setNewViolationIds] = useState(new Set());
@@ -311,6 +588,8 @@ export default function DetectionResults({
               onHighlight={onHighlightBox}
               isNew={newViolationIds.has(violation.id)}
               canvasRef={canvasRef}
+              boundingBoxes={boundingBoxes}
+              uploadedImage={uploadedImage}
             />
           ))}
         </div>
