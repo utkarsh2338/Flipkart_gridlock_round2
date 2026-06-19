@@ -13,7 +13,7 @@ import AccountabilityPanel from './components/AccountabilityPanel';
 import LiveTicker from './components/LiveTicker';
 import ModelLoadingOverlay from './components/ModelLoadingOverlay';
 import VisionGuardAssistant from './components/VisionGuardAssistant';
-import ViolationMap from './components/ViolationMap';
+import ViolationMap, { CAMERA_LOCATIONS } from './components/ViolationMap';
 import JudgeDemoOverlay from './components/JudgeDemoOverlay';
 import useTFModel from './hooks/useTFModel';
 import { runFullPipeline } from './data/aiDetection';
@@ -24,6 +24,7 @@ import {
   generateHistoricalArchive,
   generateBoundingBoxes,
   generateViolationResults,
+  VIOLATION_TYPES,
 } from './data/mockData';
 
 // ===== Sample Image Generator =====
@@ -133,6 +134,92 @@ function playAlertBeep() {
   } catch (_) {}
 }
 
+// ===== PNPOLY Helper (Point in Polygon) =====
+function isPointInPolygon(point, polygon) {
+  const x = point[0], y = point[1];
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// ===== Geofence Zone Detection & Violation Override Heuristic =====
+function applyZoneOverrides(boxes, viols, zones, imageSrc) {
+  if (!zones || zones.length === 0) return { boxes, viols };
+
+  let activeCameraName = 'CAM-001 Silk Board Junction';
+  if (viols && viols.length > 0) {
+    activeCameraName = viols[0].cameraId;
+  } else if (imageSrc && imageSrc !== '/sample-traffic.jpg') {
+    activeCameraName = 'CAM-042 Koramangala 5th Block';
+  }
+  
+  const cameraLoc = CAMERA_LOCATIONS.find(c => 
+    activeCameraName.toLowerCase().includes(c.name.toLowerCase().split(' ')[0])
+  ) || CAMERA_LOCATIONS[0];
+
+  const updatedBoxes = [...boxes];
+  const updatedViols = [...viols];
+
+  updatedBoxes.forEach(box => {
+    if (box.type === 'plate') return;
+
+    const imgWidth = 800;
+    const imgHeight = 500;
+    const centroidX = box.x + box.w / 2;
+    const centroidY = box.y + box.h / 2;
+
+    const latOffset = (centroidY / imgHeight - 0.5) * 0.004;
+    const lngOffset = (centroidX / imgWidth - 0.5) * 0.004;
+    const lat = cameraLoc.lat + latOffset;
+    const lng = cameraLoc.lng + lngOffset;
+
+    const matchedZone = zones.find(zone => isPointInPolygon([lat, lng], zone.points));
+
+    if (matchedZone) {
+      const typeKey = matchedZone.violationType;
+      const violType = VIOLATION_TYPES[typeKey];
+
+      if (violType) {
+        box.type = 'violation';
+        box.violation = violType;
+        box.color = violType.color;
+        box.label = violType.name;
+        box.shortLabel = violType.name.replace(' Non-Compliance', '').replace(' Violation', '');
+
+        const existingViolIdx = updatedViols.findIndex(v => v.boxId === box.id);
+        if (existingViolIdx >= 0) {
+          updatedViols[existingViolIdx].type = violType;
+          updatedViols[existingViolIdx].severity = violType.severity;
+          updatedViols[existingViolIdx].lat = lat;
+          updatedViols[existingViolIdx].lng = lng;
+        } else {
+          updatedViols.push({
+            id: `viol-zone-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            type: violType,
+            confidence: box.confidence || 88.5,
+            vehicleType: box.vehicleType || 'Car',
+            licensePlate: 'KA-03-MY-8888',
+            timestamp: new Date(),
+            cameraId: activeCameraName,
+            boxId: box.id,
+            severity: violType.severity,
+            lat: lat,
+            lng: lng,
+          });
+        }
+      }
+    }
+  });
+
+  return { boxes: updatedBoxes, viols: updatedViols };
+}
+
 // ===== Splash Screen Component =====
 function SplashScreen({ visible }) {
   return (
@@ -187,6 +274,34 @@ export default function App() {
   const [judgeDemoActive, setJudgeDemoActive] = useState(false);
   const [demoChatbotOpen, setDemoChatbotOpen] = useState(false);
   const [demoChatbotQuery, setDemoChatbotQuery] = useState('');
+
+  const [zones, setZones] = useState(() => {
+    const cached = localStorage.getItem('vg_custom_zones');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (err) {
+        console.error('Error parsing cached zones:', err);
+      }
+    }
+    return [
+      {
+        id: 'zone-default-1',
+        name: 'Silk Board Stop Zone',
+        violationType: 'STOP_LINE',
+        points: [
+          [12.919, 77.621],
+          [12.919, 77.625],
+          [12.915, 77.625],
+          [12.915, 77.621]
+        ]
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vg_custom_zones', JSON.stringify(zones));
+  }, [zones]);
 
 
 
@@ -316,6 +431,11 @@ export default function App() {
             viols = generateViolationResults(boxes);
           }
 
+          // Apply geofence overrides
+          const overriden = applyZoneOverrides(boxes, viols, zones, imageSrc);
+          boxes = overriden.boxes;
+          viols = overriden.viols;
+
           // Wait for preprocessing animation to finish
           const maxDelay = Math.max(...PREPROCESSING_STEPS.map(s => s.delay));
           const elapsed = performance.now() - startTime;
@@ -354,8 +474,14 @@ export default function App() {
         } else {
           // Model not loaded yet
           if (liveDemoMode || imageSrc === '/sample-traffic.jpg') {
-            const boxes = generateBoundingBoxes(imgEl.naturalWidth, imgEl.naturalHeight);
-            const viols = generateViolationResults(boxes);
+            let boxes = generateBoundingBoxes(imgEl.naturalWidth, imgEl.naturalHeight);
+            let viols = generateViolationResults(boxes);
+
+            // Apply geofence overrides
+            const overriden = applyZoneOverrides(boxes, viols, zones, imageSrc);
+            boxes = overriden.boxes;
+            viols = overriden.viols;
+
             setTimeout(() => {
               setBoundingBoxes(boxes);
               setViolations(viols);
@@ -398,7 +524,7 @@ export default function App() {
       }
     };
     imgEl.src = imageSrc;
-  }, [model, liveDemoMode]);
+  }, [model, liveDemoMode, zones]);
 
   const processImageRef = useRef(processImage);
   useEffect(() => {
@@ -669,6 +795,8 @@ export default function App() {
                 <ViolationMap
                   violations={violations}
                   liveDemoMode={liveDemoMode}
+                  zones={zones}
+                  setZones={setZones}
                 />
               </div>
             </div>

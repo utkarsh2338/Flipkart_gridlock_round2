@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Map, Layers, Radio, Eye } from 'lucide-react';
 
 // ===== Camera Locations in Bengaluru =====
-const CAMERA_LOCATIONS = [
+export const CAMERA_LOCATIONS = [
   { id: 'cam-001', name: 'Silk Board Junction', lat: 12.9177, lng: 77.6237, intensity: 0.9 },
   { id: 'cam-018', name: 'MG Road', lat: 12.9757, lng: 77.6011, intensity: 0.6 },
   { id: 'cam-012', name: 'KR Puram', lat: 13.0092, lng: 77.6968, intensity: 0.7 },
@@ -48,7 +48,7 @@ function createViolationIcon() {
   });
 }
 
-export default function ViolationMap({ violations, liveDemoMode }) {
+export default function ViolationMap({ violations, liveDemoMode, zones = [], setZones }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const violationMarkersRef = useRef([]);
@@ -56,6 +56,16 @@ export default function ViolationMap({ violations, liveDemoMode }) {
   const heatLayerRef = useRef(null);
   const [heatmapOn, setHeatmapOn] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+
+  // Geofence zone editor states
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [tempPoints, setTempPoints] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [zoneName, setZoneName] = useState('');
+  const [zoneType, setZoneType] = useState('RED_LIGHT');
+
+  const zoneLayersRef = useRef([]);
+  const drawLayersRef = useRef([]);
 
   // Initialize the map
   useEffect(() => {
@@ -147,9 +157,9 @@ export default function ViolationMap({ violations, liveDemoMode }) {
         v.cameraId && v.cameraId.toLowerCase().includes(c.name.toLowerCase().split(' ')[0])
       ) || CAMERA_LOCATIONS[idx % CAMERA_LOCATIONS.length];
 
-      // Slight offset so pins don't stack exactly
-      const lat = matchedCam.lat + (Math.random() - 0.5) * 0.004;
-      const lng = matchedCam.lng + (Math.random() - 0.5) * 0.004;
+      // Slight offset so pins don't stack exactly or use provided coordinate
+      const lat = v.lat || (matchedCam.lat + (Math.random() - 0.5) * 0.004);
+      const lng = v.lng || (matchedCam.lng + (Math.random() - 0.5) * 0.004);
 
       // Violation pin marker
       const marker = window.L.marker([lat, lng], {
@@ -186,6 +196,155 @@ export default function ViolationMap({ violations, liveDemoMode }) {
       violationCirclesRef.current.push(circle);
     });
   }, [violations, mapReady]);
+
+  // Toggle drawing mode
+  const toggleDrawMode = useCallback(() => {
+    if (isDrawing) {
+      cancelDrawing();
+    } else {
+      setIsDrawing(true);
+      setTempPoints([]);
+    }
+  }, [isDrawing]);
+
+  // Cancel drawing
+  const cancelDrawing = useCallback(() => {
+    setIsDrawing(false);
+    setTempPoints([]);
+    setShowModal(false);
+    setZoneName('');
+    setZoneType('RED_LIGHT');
+    
+    if (mapRef.current) {
+      drawLayersRef.current.forEach(layer => mapRef.current.removeLayer(layer));
+      drawLayersRef.current = [];
+    }
+  }, []);
+
+  // Close polygon
+  const handleClosePolygon = useCallback(() => {
+    if (tempPoints.length < 3) return;
+    setShowModal(true);
+  }, [tempPoints]);
+
+  // Save polygon geofence zone
+  const saveZone = useCallback(() => {
+    if (!zoneName.trim() || tempPoints.length < 3) return;
+    const newZone = {
+      id: 'zone-' + Date.now(),
+      name: zoneName.trim(),
+      violationType: zoneType,
+      points: tempPoints,
+    };
+    setZones(prev => [...prev, newZone]);
+    cancelDrawing();
+  }, [zoneName, zoneType, tempPoints, setZones, cancelDrawing]);
+
+  // Map clicks listener for drawing vertices
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !isDrawing) return;
+    const map = mapRef.current;
+
+    const handleMapClick = (e) => {
+      const { lat, lng } = e.latlng;
+      setTempPoints(prev => [...prev, [lat, lng]]);
+    };
+
+    map.on('click', handleMapClick);
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [isDrawing, mapReady]);
+
+  // Render temporary drawing layers (vertices markers + polylines)
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    const map = mapRef.current;
+
+    // Clear old temporary layers
+    drawLayersRef.current.forEach(layer => map.removeLayer(layer));
+    drawLayersRef.current = [];
+
+    if (tempPoints.length === 0) return;
+
+    // Draw markers
+    tempPoints.forEach((pt, idx) => {
+      const isFirst = idx === 0;
+      const markerIcon = window.L.divIcon({
+        className: 'draw-marker-icon',
+        html: `<div class="draw-marker ${isFirst ? 'first' : ''}"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+
+      const marker = window.L.marker(pt, { icon: markerIcon }).addTo(map);
+      drawLayersRef.current.push(marker);
+
+      if (isFirst) {
+        marker.on('click', (e) => {
+          window.L.DomEvent.stopPropagation(e);
+          if (tempPoints.length >= 3) {
+            handleClosePolygon();
+          }
+        });
+      }
+    });
+
+    // Draw polyline
+    if (tempPoints.length > 1) {
+      const polyline = window.L.polyline(tempPoints, {
+        color: '#00d4ff',
+        weight: 2,
+        dashArray: '5 5'
+      }).addTo(map);
+      drawLayersRef.current.push(polyline);
+    }
+  }, [tempPoints, mapReady, handleClosePolygon]);
+
+  // Draw configured geofence zone polygons
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    const map = mapRef.current;
+
+    zoneLayersRef.current.forEach(layer => map.removeLayer(layer));
+    zoneLayersRef.current = [];
+
+    const zoneColorMap = {
+      RED_LIGHT: '#ff4444',
+      STOP_LINE: '#ff8c00',
+      ILLEGAL_PARKING: '#ffd600',
+      WRONG_SIDE: '#8b5cf6',
+    };
+
+    const zoneNameMap = {
+      RED_LIGHT: 'Red Light Violation',
+      STOP_LINE: 'Stop Line Violation',
+      ILLEGAL_PARKING: 'No Parking',
+      WRONG_SIDE: 'Wrong-Side Driving',
+    };
+
+    zones.forEach(zone => {
+      const color = zoneColorMap[zone.violationType] || '#00d4ff';
+      const polygon = window.L.polygon(zone.points, {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.15,
+        weight: 1.5,
+      }).addTo(map);
+
+      const popupHtml = `
+        <div class="map-popup-content">
+          <div class="map-popup-title" style="color: ${color}; font-weight: bold;">🛠️ Geofence: ${zone.name}</div>
+          <div class="map-popup-detail" style="margin-top: 4px; font-size: 11px;">
+            <span>Enforcing: <strong>${zoneNameMap[zone.violationType] || zone.violationType}</strong></span><br/>
+            <span>Status: <strong>ACTIVE</strong></span>
+          </div>
+        </div>
+      `;
+      polygon.bindPopup(popupHtml, { className: 'vg-popup', closeButton: false });
+      zoneLayersRef.current.push(polygon);
+    });
+  }, [zones, mapReady]);
 
   // Heatmap layer toggle
   const toggleHeatmap = useCallback(() => {
@@ -225,7 +384,7 @@ export default function ViolationMap({ violations, liveDemoMode }) {
   }, [heatmapOn, mapReady]);
 
   return (
-    <div className="map-panel-premium glass-card-premium" id="violation-map">
+    <div className="map-panel-premium glass-card-premium relative" id="violation-map">
       {/* Header */}
       <div className="violation-map-header">
         <div className="flex items-center gap-2">
@@ -238,6 +397,11 @@ export default function ViolationMap({ violations, liveDemoMode }) {
           <span className="text-[10px] text-navy-300 font-mono bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.06]">
             Bengaluru
           </span>
+          {zones.length > 0 && (
+            <span className="text-[10px] text-cyan-accent font-mono bg-cyan-950/40 px-2.5 py-0.5 rounded-full border border-cyan-800/30">
+              Zones configured: {zones.length}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -252,6 +416,17 @@ export default function ViolationMap({ violations, liveDemoMode }) {
             </span>
           </div>
 
+          {/* Edit Zones button */}
+          <button
+            onClick={toggleDrawMode}
+            className={`map-toggle-btn ${isDrawing ? 'active border-cyan-500 text-cyan-accent' : ''}`}
+            id="edit-zones-btn"
+            title="Toggle drawing mode to configure custom geofences"
+          >
+            <Layers className="w-3 h-3 text-cyan-accent" />
+            <span>{isDrawing ? 'Drawing...' : 'Edit Zones'}</span>
+          </button>
+
           {/* Heatmap toggle */}
           <button
             onClick={toggleHeatmap}
@@ -265,8 +440,91 @@ export default function ViolationMap({ violations, liveDemoMode }) {
       </div>
 
       {/* Map Container */}
-      <div className="violation-map-container">
+      <div className="violation-map-container relative">
         <div ref={mapContainerRef} className="violation-map" id="leaflet-map" />
+
+        {/* Map drawing controls overlay */}
+        {isDrawing && (
+          <div className="map-drawing-hud glass-card-premium">
+            <span className="text-[11px] text-white/95 font-medium leading-relaxed font-mono">
+              📍 Place 3+ points on map. Click the first (red) point or "Finish Zone" to save.
+            </span>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={handleClosePolygon}
+                disabled={tempPoints.length < 3}
+                className="btn-demo-nav active"
+                style={{ fontSize: '10px', padding: '4px 10px', height: 'auto' }}
+              >
+                Finish Zone
+              </button>
+              <button
+                onClick={cancelDrawing}
+                className="btn-demo-skip"
+                style={{ fontSize: '10px', padding: '4px 10px' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Zone Configure Dialog Modal */}
+        {showModal && (
+          <div className="zone-modal-overlay">
+            <div className="zone-modal-card glass-card-premium" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider text-cyan-accent">Configure Geofence Zone</h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider text-navy-300 mb-1 font-mono">Zone Name</label>
+                  <input
+                    type="text"
+                    value={zoneName}
+                    onChange={(e) => setZoneName(e.target.value)}
+                    placeholder="e.g. Silk Board No-Parking Line"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-medium"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider text-navy-300 mb-1 font-mono">Violation Type to Detect</label>
+                  <select
+                    value={zoneType}
+                    onChange={(e) => setZoneType(e.target.value)}
+                    className="w-full bg-navy-950 border border-white/[0.08] rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-medium"
+                  >
+                    <option value="RED_LIGHT">Red Light Violation</option>
+                    <option value="STOP_LINE">Stop Line Violation</option>
+                    <option value="ILLEGAL_PARKING">No Parking (Illegal Parking)</option>
+                    <option value="WRONG_SIDE">Wrong-Side Driving</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2.5 mt-5">
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    cancelDrawing();
+                  }}
+                  className="btn-demo-skip"
+                  style={{ fontSize: '10px', padding: '6px 12px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveZone}
+                  disabled={!zoneName.trim()}
+                  className="btn-demo-nav active"
+                  style={{ fontSize: '10px', padding: '6px 12px', height: 'auto' }}
+                >
+                  Save Zone
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Map overlay legend */}
         <div className="map-legend">
