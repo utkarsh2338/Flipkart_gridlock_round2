@@ -3960,3 +3960,29 @@ body {
   background: #020817;
   color: #fff;
 }
+
+/* ===== Real-time Performance Metrics Banner ===== */
+.performance-metrics-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 12px;
+  background: rgba(2, 8, 23, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: #4d6a8a;
+  user-select: none;
+  z-index: 40;
+  position: relative;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .performance-metrics-banner {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 9px;
+  }
+}
